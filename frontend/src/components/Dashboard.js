@@ -286,7 +286,7 @@ export default function Dashboard() {
               </Select>
               
               {/* Tipo Filter */}
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>}
+              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value || '' }))}>
                 <SelectTrigger data-testid="tipo-filter">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
