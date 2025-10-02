@@ -273,7 +273,7 @@ export default function Dashboard() {
               </div>
               
               {/* Site Filter */}
-              <Select value={filters.site} onValueChange={(value) => setFilters(prev => ({ ...prev, site: value }))}>}
+              <Select value={filters.site} onValueChange={(value) => setFilters(prev => ({ ...prev, site: value || '' }))}>
                 <SelectTrigger data-testid="site-filter">
                   <SelectValue placeholder="Todos os sites" />
                 </SelectTrigger>
