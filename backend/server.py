@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-from passlib.context import CryptContext
+import hashlib
 from jose import JWTError, jwt
 import base64
 from openpyxl import Workbook
