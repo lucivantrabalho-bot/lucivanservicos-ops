@@ -286,12 +286,12 @@ export default function Dashboard() {
               </Select>
               
               {/* Tipo Filter */}
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value || '' }))}>
+              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value === 'all' ? '' : value }))}>
                 <SelectTrigger data-testid="tipo-filter">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
                   <SelectItem value="Energia">Energia</SelectItem>
                   <SelectItem value="Arcon">Arcon</SelectItem>
                 </SelectContent>
