@@ -273,12 +273,12 @@ export default function Dashboard() {
               </div>
               
               {/* Site Filter */}
-              <Select value={filters.site} onValueChange={(value) => setFilters(prev => ({ ...prev, site: value || '' }))}>
+              <Select value={filters.site} onValueChange={(value) => setFilters(prev => ({ ...prev, site: value === 'all' ? '' : value }))}>
                 <SelectTrigger data-testid="site-filter">
                   <SelectValue placeholder="Todos os sites" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os sites</SelectItem>
+                  <SelectItem value="all">Todos os sites</SelectItem>
                   {sites.map(site => (
                     <SelectItem key={site} value={site}>{site}</SelectItem>
                   ))}
