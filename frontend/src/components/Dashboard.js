@@ -308,15 +308,6 @@ export default function Dashboard() {
                   <SelectItem value="Finalizado">Finalizado</SelectItem>
                 </SelectContent>
               </Select>
-                <SelectTrigger data-testid="status-filter">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Finalizado">Finalizado</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             
             <div className="flex justify-end mt-4">
