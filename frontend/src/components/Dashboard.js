@@ -298,7 +298,16 @@ export default function Dashboard() {
               </Select>
               
               {/* Status Filter */}
-              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>}
+              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}>
+                <SelectTrigger data-testid="status-filter">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
+                </SelectContent>
+              </Select>
                 <SelectTrigger data-testid="status-filter">
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
