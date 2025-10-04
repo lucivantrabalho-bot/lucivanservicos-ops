@@ -194,12 +194,53 @@ export default function Dashboard() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      setSuccess('Arquivo exportado com sucesso!');
-      setTimeout(() => setSuccess(''), 3000);
+      success('Arquivo exportado com sucesso!');
     } catch (err) {
       console.error('Error exporting:', err);
-      setError('Erro ao exportar arquivo');
-      setTimeout(() => setError(''), 3000);
+      showError('Erro ao exportar arquivo');
+    }
+  };
+
+  const handleExportAdvanced = async () => {
+    try {
+      const response = await axios.post(`${API_BASE}/reports/export-advanced`, {
+        filters: {
+          start_date: filters.startDate || null,
+          end_date: filters.endDate || null,
+          site: filters.site || null,
+          tipo: filters.tipo || null,
+          status: filters.status || null,
+          validation_status: filters.validation_status || null,
+          usuario_criacao: isAdmin ? null : user?.username // Non-admin users only see their own
+        },
+        export_config: {
+          format: 'excel',
+          include_photos: false,
+          group_by: null
+        }
+      }, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with current date
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const filename = `relatorio_avancado_${dateStr}.xlsx`;
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      success('Relatório avançado exportado com sucesso!');
+    } catch (err) {
+      console.error('Error exporting advanced report:', err);
+      showError('Erro ao exportar relatório avançado');
     }
   };
 
