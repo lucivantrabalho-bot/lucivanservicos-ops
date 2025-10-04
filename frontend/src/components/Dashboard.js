@@ -344,6 +344,9 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Dashboard Charts */}
+        <DashboardCharts />
+
         {/* Filters */}
         <Card className="glass mb-6">
           <CardHeader>
