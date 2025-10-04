@@ -95,7 +95,7 @@ code {
   }
   
   .card-hover {
-    @apply transform transition-all duration-300 hover:scale-102 hover:shadow-xl;
+    @apply transform transition-all duration-300 hover:scale-105 hover:shadow-xl;
   }
   
   .fade-in {
