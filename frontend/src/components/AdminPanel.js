@@ -67,6 +67,7 @@ export default function AdminPanel() {
       loadAllUsers();
       loadAllPendencias();
       loadMonthlyStats();
+      loadFormConfig();
     }
   }, [isAdmin]);
 
