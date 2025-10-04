@@ -651,6 +651,7 @@ export default function Dashboard() {
           onClose={closeDeleteModal}
           pendencia={deleteModal.pendencia}
           onSuccess={handleDeleteSuccess}
+          isAdmin={isAdmin}
         />
       </div>
     </div>
