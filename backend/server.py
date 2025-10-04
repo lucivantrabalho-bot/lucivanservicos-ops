@@ -924,8 +924,7 @@ async def get_dashboard_stats(filters: ReportFilter, current_user: User = Depend
 
 @api_router.post("/reports/export-advanced")
 async def export_pendencias_advanced(
-    filters: ReportFilter,
-    export_config: ExportFormat,
+    request: ExportRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Exportação avançada com múltiplos formatos e opções"""
