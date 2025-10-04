@@ -90,6 +90,14 @@ function AppRoutes() {
           <PendingApproval />
         }
       />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <DashboardCharts />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
