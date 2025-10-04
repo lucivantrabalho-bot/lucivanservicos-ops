@@ -22,7 +22,8 @@ export default function DeleteModal({
   isOpen, 
   onClose, 
   pendencia, 
-  onSuccess 
+  onSuccess,
+  isAdmin 
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
