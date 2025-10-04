@@ -99,7 +99,6 @@ class PendenciaUpdate(BaseModel):
     foto_fechamento_base64: Optional[str] = None  # Será obrigatória na validação
 
 class UserApproval(BaseModel):
-    user_id: str
     status: str  # "APPROVED" or "REJECTED"
 
 class PendenciaValidation(BaseModel):
