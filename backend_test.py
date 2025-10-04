@@ -408,6 +408,10 @@ class BackendTester:
         bug_test_passed = self.test_password_reset_bug_investigation()
         print()
         
+        # Additional test with existing user
+        self.test_existing_user_password_reset()
+        print()
+        
         # Step 2: Test get all users
         users = self.test_get_all_users()
         print()
