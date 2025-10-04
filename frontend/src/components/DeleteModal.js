@@ -33,7 +33,12 @@ export default function DeleteModal({
     setIsLoading(true);
 
     try {
-      await axios.delete(`${API_BASE}/pendencias/${pendencia.id}`);
+      // Use admin endpoint if user is admin
+      const endpoint = isAdmin 
+        ? `${API_BASE}/admin/delete-pendencia/${pendencia.id}`
+        : `${API_BASE}/pendencias/${pendencia.id}`;
+      
+      await axios.delete(endpoint);
       
       onSuccess();
       onClose();
