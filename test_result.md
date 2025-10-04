@@ -213,6 +213,66 @@
           agent: "testing"
           comment: "TESTED: Successfully retrieves individual user statistics for current month (October 2025). Returns proper structure with month, year, created_count, finished_count, approved_created_count, and approved_finished_count fields. Statistics calculation working correctly."
 
+  - task: "Fixed Registration Flow - POST /api/register PENDING status"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: POST /api/register correctly returns PENDING status for new users and provides access_token. Registration flow working as expected. Note: PENDING users are blocked from login and protected endpoint access (current security implementation)."
+
+  - task: "Reports Timeline - GET /api/reports/timeline"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves timeline data with proper structure (period, year, month, total, pending, finished, approved). Returns data for available periods. API working correctly."
+
+  - task: "Reports Distribution - GET /api/reports/distribution"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves distribution data with proper structure (by_type, by_site, by_status). All sections return appropriate data arrays. API working correctly."
+
+  - task: "Reports Performance - GET /api/reports/performance"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves performance data for last 30 days with proper structure (top_creators, top_finalizers, period). Returns user performance metrics with approval rates. API working correctly."
+
+  - task: "Admin Delete Pendency - DELETE /api/admin/delete-pendencia/{id}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully allows admin to delete any pendency in any status (including finished pendencies). Proper authorization checks in place. Returns success message. API working correctly."
+
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
     implemented: true
