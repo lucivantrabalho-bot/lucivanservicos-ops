@@ -88,19 +88,24 @@ export default function Dashboard() {
     }
   };
 
-  const handleFinalizarPendencia = async (pendenciaId) => {
-    try {
-      await axios.put(`${API_BASE}/pendencias/${pendenciaId}`, {
-        status: 'Finalizado'
-      });
-      setSuccess('Pendência finalizada com sucesso!');
-      setTimeout(() => setSuccess(''), 3000);
-      loadPendencias();
-    } catch (err) {
-      console.error('Error finalizing pendencia:', err);
-      setError('Erro ao finalizar pendência');
-      setTimeout(() => setError(''), 3000);
-    }
+  const openFinalizeModal = (pendencia) => {
+    setFinalizeModal({
+      isOpen: true,
+      pendencia: pendencia
+    });
+  };
+
+  const closeFinalizeModal = () => {
+    setFinalizeModal({
+      isOpen: false,
+      pendencia: null
+    });
+  };
+
+  const handleFinalizeSuccess = () => {
+    setSuccess('Pendência finalizada com sucesso!');
+    setTimeout(() => setSuccess(''), 3000);
+    loadPendencias();
   };
 
   const handleExport = async () => {
