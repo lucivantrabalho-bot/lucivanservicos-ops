@@ -148,10 +148,30 @@ export function AuthProvider({ children }) {
           }
         } catch (fetchError) {
           console.error('[AuthContext] Both axios and fetch failed:', fetchError);
-          return { 
-            success: false, 
-            error: 'Erro de conexão. Não foi possível conectar ao servidor.' 
-          };
+          
+          // Executar diagnóstico de conectividade
+          console.log('[AuthContext] Executando diagnóstico de conectividade...');
+          try {
+            const diagnostics = await testConnection();
+            console.log('[AuthContext] Diagnóstico completo:', diagnostics);
+            
+            // Retornar erro com informações do diagnóstico
+            const summary = diagnostics.recommendations.find(r => r.type === 'critical') || 
+                          diagnostics.recommendations.find(r => r.type === 'warning') ||
+                          { description: 'Não foi possível conectar ao servidor.' };
+                          
+            return { 
+              success: false, 
+              error: summary.description,
+              diagnostics: diagnostics
+            };
+          } catch (diagError) {
+            console.error('[AuthContext] Diagnóstico falhou:', diagError);
+            return { 
+              success: false, 
+              error: 'Erro de conexão. Não foi possível conectar ao servidor.' 
+            };
+          }
         }
       }
       
