@@ -31,7 +31,7 @@ import DeleteModal from './DeleteModal';
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   
   const [pendencias, setPendencias] = useState([]);
