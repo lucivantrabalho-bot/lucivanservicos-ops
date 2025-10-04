@@ -541,19 +541,23 @@ async def get_monthly_stats(current_user: User = Depends(get_current_user)):
     else:
         end_date = datetime(current_year, current_month + 1, 1, tzinfo=timezone.utc)
     
-    # Most created pendencias this month
+    # Most created pendencias this month (only validated by admin)
     created_pipeline = [
-        {"$match": {"created_at": {"$gte": start_date, "$lt": end_date}}},
+        {"$match": {
+            "created_at": {"$gte": start_date, "$lt": end_date},
+            "validation_status": "APPROVED"
+        }},
         {"$group": {"_id": "$usuario_criacao", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 1}
     ]
     
-    # Most finished pendencias this month
+    # Most finished pendencias this month (only validated by admin)
     finished_pipeline = [
         {"$match": {
             "data_finalizacao": {"$gte": start_date, "$lt": end_date},
-            "status": "Finalizado"
+            "status": "Finalizado",
+            "validation_status": "APPROVED"
         }},
         {"$group": {"_id": "$usuario_finalizacao", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
