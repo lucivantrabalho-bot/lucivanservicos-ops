@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for New Features
-Tests the newly implemented functionality including:
-- GET /api/stats/monthly (Monthly Statistics with validation filter)
-- GET /api/admin/form-config (Form Configuration)
-- PUT /api/admin/form-config (Update Form Configuration)
-- PUT /api/user/change-password (User Password Change)
-- GET /api/user/stats (Individual User Statistics)
+Backend API Testing Script for Advanced Reporting Endpoints
+Tests the newly implemented advanced reporting functionality including:
+- POST /api/reports/dashboard-stats (Dashboard Statistics Advanced)
+- POST /api/reports/export-advanced (Export Advanced with Excel formatting)
+- GET /api/reports/performance-metrics (Performance Metrics)
+
+These endpoints provide comprehensive reporting capabilities with:
+- Advanced filtering options (date range, site, type, status, validation)
+- Permission-based access control (admin vs regular users)
+- Excel export with enhanced formatting
+- Performance analytics and metrics
 """
 
 import requests
