@@ -294,7 +294,8 @@ async def login(user_data: UserLogin):
         token_type="bearer",
         user_id=user["id"],
         username=user["username"],
-        role=user_role
+        role=user_role,
+        status=user_status
     )
 
 @api_router.get("/me", response_model=User)
