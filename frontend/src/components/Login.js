@@ -5,8 +5,9 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { AlertCircle, Loader2, ClipboardList } from 'lucide-react';
+import { AlertCircle, Loader2, ClipboardList, Network } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
+import ConnectionDiagnostic from './ConnectionDiagnostic';
 
 export default function Login() {
   const { login, register } = useAuth();
