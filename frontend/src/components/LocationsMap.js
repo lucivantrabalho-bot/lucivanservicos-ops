@@ -259,41 +259,44 @@ export default function LocationsMap() {
         </div>
 
         {/* Locations Grid */}
-        {filteredLocations.length === 0 ? (
+        {!searchPerformed ? (
           <Card className="glass">
             <CardContent className="p-12 text-center">
-              {locations.length === 0 ? (
-                <>
-                  <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                    Nenhuma localização disponível
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
-                    Aguarde o administrador importar arquivos KML com dados de localização
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Search className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                    Nenhuma localização encontrada
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
-                    Tente ajustar os termos de busca
-                  </p>
-                  <Button 
-                    onClick={() => setSearchTerm('')} 
-                    variant="outline"
-                  >
-                    Limpar Busca
-                  </Button>
-                </>
-              )}
+              <Search className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                Busque por Localizações
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Digite o nome da estação ou local no campo de busca acima para encontrar rapidamente a localização desejada.
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-500">
+                📍 Exemplo: "BRH", "Torre", "Estação" ou código da localização
+              </p>
+            </CardContent>
+          </Card>
+        ) : locations.length === 0 ? (
+          <Card className="glass">
+            <CardContent className="p-12 text-center">
+              <Search className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                Nenhuma localização encontrada
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Não encontramos localizações com o termo "{searchTerm}". Tente:
+              </p>
+              <ul className="text-sm text-slate-500 dark:text-slate-500 mb-4 space-y-1">
+                <li>• Verificar a grafia do nome</li>
+                <li>• Usar termos mais gerais (ex: "Torre" ao invés do código completo)</li>
+                <li>• Tentar parte do nome da estação</li>
+              </ul>
+              <Button onClick={clearSearch} variant="outline">
+                Nova Busca
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredLocations.map((location, index) => (
+            {locations.map((location, index) => (
               <Card key={index} className="glass card-hover fade-in">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
