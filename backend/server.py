@@ -232,10 +232,20 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user.dict())
     
-    return {
-        "message": "User registered successfully. Awaiting admin approval." if user_count > 0 else "Admin user created successfully.",
-        "status": "approved" if user_count == 0 else "pending"
-    }
+    # Create access token even for pending users (they need to see pending screen)
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user.id,
+        username=user.username,
+        role=user.role,
+        status=user.status
+    )
 
 @api_router.post("/login", response_model=Token)
 async def login(user_data: UserLogin):
