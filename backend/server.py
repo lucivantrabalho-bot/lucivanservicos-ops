@@ -294,7 +294,7 @@ async def create_pendencia(pendencia_data: PendenciaCreate, current_user: User =
         observacoes=pendencia_data.observacoes,
         foto_base64=pendencia_data.foto_base64,
         usuario_criacao=current_user.username,
-        data_hora=to_brasilia_time(datetime.now(timezone.utc))
+        data_hora=datetime.now(timezone.utc)
     )
     
     await db.pendencias.insert_one(pendencia.dict())
