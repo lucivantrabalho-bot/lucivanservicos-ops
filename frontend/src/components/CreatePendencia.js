@@ -23,37 +23,7 @@ import { Alert, AlertDescription } from './ui/alert';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
-// Opções baseadas no tipo
-const OPCOES_ENERGIA = [
-  'Controladora',
-  'QDCA',
-  'QM',
-  'Retificador',
-  'Disjuntor',
-  'Bateria',
-  'Iluminação Pátio',
-  'Sensor de Porta',
-  'Sensor de Incêndio',
-  'Iluminação Gabinete/Container',
-  'Cabo de Alimentação'
-];
-
-const OPCOES_ARCON = [
-  'Trocador de Calor',
-  'Sanrio',
-  'Walmont',
-  'Limpeza',
-  'Contatora',
-  'Compressor',
-  'Gás',
-  'Fusível',
-  'Placa Queimada',
-  'Transformador',
-  'Relé Térmico',
-  'Relé Falta de Fase',
-  'Comando',
-  'Alarme'
-];
+// Opções serão carregadas dinamicamente da API
 
 export default function CreatePendencia() {
   const { user } = useAuth();
