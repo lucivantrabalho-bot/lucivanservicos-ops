@@ -30,13 +30,31 @@ export default function Login() {
     setError('');
     setIsLoading(true);
     
+    console.log('[Login Component] Starting login process...');
+    console.log('[Login Component] Username:', loginData.username);
+    console.log('[Login Component] Password length:', loginData.password?.length);
+    
+    // Validação básica
+    if (!loginData.username || !loginData.password) {
+      setError('Por favor, preencha todos os campos.');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      console.log('[Login Component] Calling auth.login...');
       const result = await login(loginData.username, loginData.password);
+      console.log('[Login Component] Login result:', result);
+      
       if (!result.success) {
+        console.error('[Login Component] Login failed:', result.error);
         setError(result.error);
+      } else {
+        console.log('[Login Component] Login successful!');
       }
     } catch (err) {
-      setError('Erro ao fazer login');
+      console.error('[Login Component] Unexpected error during login:', err);
+      setError('Erro inesperado ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
