@@ -17,7 +17,11 @@ import {
   UserCheck,
   UserX,
   Trophy,
-  Calendar
+  Calendar,
+  Settings,
+  Plus,
+  Trash2,
+  Save
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
