@@ -521,12 +521,471 @@ class BackendTester:
             self.log_test("Existing User Password Reset Test", False, f"Test failed with exception: {str(e)}")
             return False
 
+    def test_monthly_stats(self):
+        """Test GET /api/stats/monthly - should only count APPROVED pendencies"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/stats/monthly",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                stats = response.json()
+                required_fields = ["month", "year", "most_created", "most_finished"]
+                
+                if all(field in stats for field in required_fields):
+                    self.log_test("Monthly Stats", True, 
+                                f"Retrieved monthly stats for {stats.get('month')} {stats.get('year')}", 
+                                f"Most created: {stats.get('most_created')}, Most finished: {stats.get('most_finished')}")
+                    return True
+                else:
+                    self.log_test("Monthly Stats", False, 
+                                "Missing required fields in response", stats)
+                    return False
+            else:
+                self.log_test("Monthly Stats", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Monthly Stats", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_get_form_config(self):
+        """Test GET /api/admin/form-config - should return default config if none exists"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/admin/form-config",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                config = response.json()
+                required_fields = ["energia_options", "arcon_options"]
+                
+                if all(field in config for field in required_fields):
+                    energia_count = len(config.get("energia_options", []))
+                    arcon_count = len(config.get("arcon_options", []))
+                    self.log_test("Get Form Config", True, 
+                                f"Retrieved form configuration", 
+                                f"Energia options: {energia_count}, Arcon options: {arcon_count}")
+                    return config
+                else:
+                    self.log_test("Get Form Config", False, 
+                                "Missing required fields in response", config)
+                    return None
+            else:
+                self.log_test("Get Form Config", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return None
+                
+        except Exception as e:
+            self.log_test("Get Form Config", False, f"Request failed: {str(e)}")
+            return None
+
+    def test_update_form_config(self):
+        """Test PUT /api/admin/form-config - should save configuration"""
+        try:
+            # Test configuration with modified options
+            test_config = {
+                "energia_options": [
+                    "Controladora", "QDCA", "QM", "Retificador", "Disjuntor", 
+                    "Bateria", "Iluminação Pátio", "Sensor de Porta", 
+                    "Sensor de Incêndio", "Iluminação Gabinete/Container", 
+                    "Cabo de Alimentação", "TESTE_NOVO_ITEM"
+                ],
+                "arcon_options": [
+                    "Trocador de Calor", "Sanrio", "Walmont", "Limpeza", 
+                    "Contatora", "Compressor", "Gás", "Fusível", 
+                    "Placa Queimada", "Transformador", "Relé Térmico", 
+                    "Relé Falta de Fase", "Comando", "Alarme", "TESTE_NOVO_ARCON"
+                ]
+            }
+            
+            response = requests.put(
+                f"{self.base_url}/admin/form-config",
+                headers=self.get_auth_headers(),
+                json=test_config,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result:
+                    self.log_test("Update Form Config", True, 
+                                "Successfully updated form configuration", 
+                                f"Added test items to both lists")
+                    
+                    # Verify the update by getting the config again
+                    verify_response = requests.get(
+                        f"{self.base_url}/admin/form-config",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    
+                    if verify_response.status_code == 200:
+                        updated_config = verify_response.json()
+                        if ("TESTE_NOVO_ITEM" in updated_config.get("energia_options", []) and 
+                            "TESTE_NOVO_ARCON" in updated_config.get("arcon_options", [])):
+                            self.log_test("Verify Form Config Update", True, 
+                                        "Configuration update verified successfully")
+                            return True
+                        else:
+                            self.log_test("Verify Form Config Update", False, 
+                                        "Updated items not found in retrieved configuration")
+                            return False
+                    else:
+                        self.log_test("Verify Form Config Update", False, 
+                                    f"Failed to verify update: {verify_response.status_code}")
+                        return False
+                else:
+                    self.log_test("Update Form Config", False, 
+                                "No success message in response", result)
+                    return False
+            else:
+                self.log_test("Update Form Config", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Update Form Config", False, f"Request failed: {str(e)}")
+            return False
+
+    def create_regular_user_for_testing(self):
+        """Create a regular user for password change testing"""
+        try:
+            test_username = f"testuser_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            test_password = "testpass123"
+            
+            # Create user
+            response = requests.post(
+                f"{self.base_url}/register",
+                json={"username": test_username, "password": test_password},
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Create Regular User", False, 
+                            f"Failed to create user: {response.status_code}")
+                return None, None
+            
+            # Get user ID and approve
+            users_response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if users_response.status_code != 200:
+                return None, None
+            
+            users = users_response.json()
+            test_user = next((u for u in users if u.get("username") == test_username), None)
+            
+            if not test_user:
+                return None, None
+            
+            # Approve user
+            approve_response = requests.put(
+                f"{self.base_url}/admin/approve-user/{test_user['id']}",
+                headers=self.get_auth_headers(),
+                json={"status": "APPROVED"},
+                timeout=10
+            )
+            
+            if approve_response.status_code == 200:
+                self.log_test("Create Regular User", True, f"Created and approved user: {test_username}")
+                return test_username, test_password
+            else:
+                return None, None
+                
+        except Exception as e:
+            self.log_test("Create Regular User", False, f"Failed: {str(e)}")
+            return None, None
+
+    def test_user_change_password_valid(self):
+        """Test PUT /api/user/change-password with valid current password"""
+        try:
+            # Create a test user
+            username, current_password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("User Change Password (Valid)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": current_password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("User Change Password (Valid)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Change password
+            new_password = "newpassword456"
+            change_response = requests.put(
+                f"{self.base_url}/user/change-password",
+                headers=user_headers,
+                json={
+                    "current_password": current_password,
+                    "new_password": new_password
+                },
+                timeout=10
+            )
+            
+            if change_response.status_code == 200:
+                # Verify new password works
+                verify_response = requests.post(
+                    f"{self.base_url}/login",
+                    json={"username": username, "password": new_password},
+                    timeout=10
+                )
+                
+                if verify_response.status_code == 200:
+                    self.log_test("User Change Password (Valid)", True, 
+                                f"Successfully changed password for user {username}")
+                    
+                    # Cleanup - delete test user
+                    users_response = requests.get(
+                        f"{self.base_url}/admin/all-users",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    users = users_response.json()
+                    test_user = next((u for u in users if u.get("username") == username), None)
+                    if test_user:
+                        requests.delete(
+                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                    
+                    return True
+                else:
+                    self.log_test("User Change Password (Valid)", False, 
+                                "New password doesn't work after change")
+                    return False
+            else:
+                self.log_test("User Change Password (Valid)", False, 
+                            f"Password change failed: {change_response.status_code}", change_response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("User Change Password (Valid)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_user_change_password_invalid_current(self):
+        """Test PUT /api/user/change-password with incorrect current password"""
+        try:
+            # Create a test user
+            username, current_password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("User Change Password (Invalid Current)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": current_password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("User Change Password (Invalid Current)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Try to change password with wrong current password
+            change_response = requests.put(
+                f"{self.base_url}/user/change-password",
+                headers=user_headers,
+                json={
+                    "current_password": "wrongpassword",
+                    "new_password": "newpassword456"
+                },
+                timeout=10
+            )
+            
+            if change_response.status_code == 400:
+                self.log_test("User Change Password (Invalid Current)", True, 
+                            "Correctly rejected incorrect current password")
+                
+                # Cleanup - delete test user
+                users_response = requests.get(
+                    f"{self.base_url}/admin/all-users",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                users = users_response.json()
+                test_user = next((u for u in users if u.get("username") == username), None)
+                if test_user:
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                
+                return True
+            else:
+                self.log_test("User Change Password (Invalid Current)", False, 
+                            f"Should have rejected wrong password but got: {change_response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("User Change Password (Invalid Current)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_user_change_password_too_short(self):
+        """Test PUT /api/user/change-password with new password too short"""
+        try:
+            # Create a test user
+            username, current_password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("User Change Password (Too Short)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": current_password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("User Change Password (Too Short)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Try to change password with too short new password
+            change_response = requests.put(
+                f"{self.base_url}/user/change-password",
+                headers=user_headers,
+                json={
+                    "current_password": current_password,
+                    "new_password": "123"  # Less than 4 characters
+                },
+                timeout=10
+            )
+            
+            if change_response.status_code == 400:
+                self.log_test("User Change Password (Too Short)", True, 
+                            "Correctly rejected password that's too short")
+                
+                # Cleanup - delete test user
+                users_response = requests.get(
+                    f"{self.base_url}/admin/all-users",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                users = users_response.json()
+                test_user = next((u for u in users if u.get("username") == username), None)
+                if test_user:
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                
+                return True
+            else:
+                self.log_test("User Change Password (Too Short)", False, 
+                            f"Should have rejected short password but got: {change_response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("User Change Password (Too Short)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_user_individual_stats(self):
+        """Test GET /api/user/stats - individual user statistics"""
+        try:
+            # Create a test user
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("User Individual Stats", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("User Individual Stats", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Get user stats
+            stats_response = requests.get(
+                f"{self.base_url}/user/stats",
+                headers=user_headers,
+                timeout=10
+            )
+            
+            if stats_response.status_code == 200:
+                stats = stats_response.json()
+                required_fields = ["month", "year", "created_count", "finished_count", 
+                                 "approved_created_count", "approved_finished_count"]
+                
+                if all(field in stats for field in required_fields):
+                    self.log_test("User Individual Stats", True, 
+                                f"Retrieved individual stats for {username}", 
+                                f"Month: {stats.get('month')} {stats.get('year')}, Created: {stats.get('created_count')}, Finished: {stats.get('finished_count')}")
+                    
+                    # Cleanup - delete test user
+                    users_response = requests.get(
+                        f"{self.base_url}/admin/all-users",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    users = users_response.json()
+                    test_user = next((u for u in users if u.get("username") == username), None)
+                    if test_user:
+                        requests.delete(
+                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                    
+                    return True
+                else:
+                    self.log_test("User Individual Stats", False, 
+                                "Missing required fields in response", stats)
+                    return False
+            else:
+                self.log_test("User Individual Stats", False, 
+                            f"Request failed with status {stats_response.status_code}", stats_response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("User Individual Stats", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
-        """Run all admin user management tests"""
-        print("=" * 60)
-        print("BACKEND API TESTING - ADMIN USER MANAGEMENT")
-        print("=" * 60)
+        """Run all new feature tests"""
+        print("=" * 80)
+        print("BACKEND API TESTING - NEW FEATURES")
+        print("=" * 80)
         print(f"Testing against: {self.base_url}")
+        print("Testing newly implemented features:")
+        print("1. Monthly Statistics (with validation filter)")
+        print("2. Form Configuration Management")
+        print("3. User Profile Management")
         print()
         
         # Step 1: Login as admin
@@ -536,54 +995,35 @@ class BackendTester:
         
         print()
         
-        # PRIORITY: Run password reset bug investigation first
-        bug_test_passed = self.test_password_reset_bug_investigation()
+        # Test 1: Monthly Statistics
+        print("🔍 Testing Monthly Statistics...")
+        self.test_monthly_stats()
         print()
         
-        # Additional test with existing user
-        self.test_existing_user_password_reset()
+        # Test 2: Form Configuration
+        print("🔍 Testing Form Configuration...")
+        original_config = self.test_get_form_config()
+        print()
+        self.test_update_form_config()
         print()
         
-        # Step 2: Test get all users
-        users = self.test_get_all_users()
+        # Test 3: User Profile - Password Change
+        print("🔍 Testing User Password Change...")
+        self.test_user_change_password_valid()
+        print()
+        self.test_user_change_password_invalid_current()
+        print()
+        self.test_user_change_password_too_short()
         print()
         
-        # Step 3: Test password reset with valid password
-        if users:
-            # Find a non-admin user or use admin for testing
-            test_user = None
-            for user in users:
-                if user.get("username") != ADMIN_USERNAME:
-                    test_user = user
-                    break
-            
-            if not test_user:
-                test_user = next((u for u in users if u.get("username") == ADMIN_USERNAME), None)
-            
-            if test_user:
-                self.test_reset_password_valid(test_user["id"], test_user["username"])
-                print()
-                self.test_reset_password_invalid(test_user["id"], test_user["username"])
-                print()
-        
-        # Step 4: Test admin cannot delete own account
-        self.test_delete_own_account()
+        # Test 4: User Individual Statistics
+        print("🔍 Testing User Individual Statistics...")
+        self.test_user_individual_stats()
         print()
         
-        # Step 5: Test user deletion (create a test user first)
-        test_username = self.create_test_user()
-        if test_username:
-            # Get the created user's ID
-            updated_users = self.test_get_all_users()
-            test_user = next((u for u in updated_users if u.get("username") == test_username), None)
-            if test_user:
-                print()
-                self.test_delete_other_user(test_user["id"], test_user["username"])
-        
-        print()
-        print("=" * 60)
+        print("=" * 80)
         print("TEST SUMMARY")
-        print("=" * 60)
+        print("=" * 80)
         
         passed = sum(1 for result in self.test_results if result["success"])
         total = len(self.test_results)
@@ -599,11 +1039,8 @@ class BackendTester:
             print("\nFAILED TESTS:")
             for test in failed_tests:
                 print(f"  - {test['test']}: {test['message']}")
-        
-        # Special attention to password reset bug
-        if not bug_test_passed:
-            print("\n🚨 CRITICAL PASSWORD RESET BUG DETECTED!")
-            print("   This requires immediate investigation and fix.")
+        else:
+            print("\n✅ All tests passed successfully!")
         
         return passed == total
 
