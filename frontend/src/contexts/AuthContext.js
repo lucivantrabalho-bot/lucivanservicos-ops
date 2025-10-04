@@ -36,6 +36,7 @@ export function AuthProvider({ children }) {
         try {
           const response = await axios.get(`${API_BASE}/me`);
           setUser(response.data);
+          setIsAdmin(response.data.role === 'ADMIN');
           setToken(savedToken);
         } catch (error) {
           console.error('Auth check failed:', error);
