@@ -263,6 +263,93 @@ export default function AdminPanel() {
             )}
           </TabsContent>
 
+          {/* Usuários Cadastrados */}
+          <TabsContent value="all-users" className="space-y-4">
+            {allUsers.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Users className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhum usuário cadastrado</h3>
+                  <p className="text-slate-600">O sistema não possui usuários cadastrados</p>
+                </CardContent>
+              </Card>
+            ) : (
+              allUsers.map((userItem) => (
+                <Card key={userItem.id} className="glass">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          userItem.role === 'ADMIN' ? 'bg-purple-100' : 'bg-slate-200'
+                        }`}>
+                          <Users className={`w-5 h-5 ${
+                            userItem.role === 'ADMIN' ? 'text-purple-600' : 'text-slate-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-semibold text-slate-900">{userItem.username}</h3>
+                            {userItem.role === 'ADMIN' && (
+                              <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                Admin
+                              </Badge>
+                            )}
+                            <Badge 
+                              className={`text-xs ${
+                                userItem.status === 'APPROVED' 
+                                  ? 'bg-emerald-100 text-emerald-700' 
+                                  : userItem.status === 'PENDING'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {userItem.status === 'APPROVED' ? 'Aprovado' : 
+                               userItem.status === 'PENDING' ? 'Pendente' : 'Rejeitado'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            Cadastrado em: {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                          {userItem.approved_by && userItem.approved_at && (
+                            <p className="text-sm text-slate-500">
+                              Aprovado por: {userItem.approved_by} em {new Date(userItem.approved_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Só mostrar ações se não for o próprio admin logado */}
+                      {userItem.username !== user.username && (
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => setResetPasswordModal({ isOpen: true, user: userItem })}
+                            variant="outline"
+                            size="sm"
+                            className="btn-hover border-blue-200 text-blue-700 hover:bg-blue-50"
+                            data-testid="reset-password-btn"
+                          >
+                            <Clock className="w-4 h-4 mr-1" />
+                            Reset Senha
+                          </Button>
+                          <Button
+                            onClick={() => setDeleteUserModal({ isOpen: true, user: userItem })}
+                            variant="outline"
+                            size="sm"
+                            className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                            data-testid="delete-user-btn"
+                          >
+                            <UserX className="w-4 h-4 mr-1" />
+                            Excluir
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
           {/* Validar Pendências */}
           <TabsContent value="pendencias" className="space-y-4">
             {allPendencias.filter(p => p.status === 'Finalizado' && !p.validation_status).length === 0 ? (
