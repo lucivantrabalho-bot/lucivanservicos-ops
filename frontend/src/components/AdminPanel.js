@@ -70,6 +70,15 @@ export default function AdminPanel() {
     }
   };
 
+  const loadAllUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/admin/all-users`);
+      setAllUsers(response.data);
+    } catch (err) {
+      console.error('Error loading all users:', err);
+    }
+  };
+
   const loadAllPendencias = async () => {
     try {
       const response = await axios.get(`${API_BASE}/admin/pendencias`);
