@@ -491,7 +491,7 @@ export default function Dashboard() {
                     </div>
                     
                     {/* Actions */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 flex-wrap gap-y-2">
                       {pendencia.foto_base64 && (
                         <Button
                           variant="outline"
