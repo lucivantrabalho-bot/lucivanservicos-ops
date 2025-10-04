@@ -12,6 +12,7 @@ import PendingApproval from './components/PendingApproval';
 
 // Auth context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
