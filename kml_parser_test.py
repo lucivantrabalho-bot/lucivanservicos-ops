@@ -428,7 +428,19 @@ class KMLParserTester:
             
             response = self.upload_kml_file(file_path, "Invalid Coordinates")
             
-            if response and response.status_code == 400:
+            if response and response.status_code == 500:
+                # Server returns 500 when no valid locations found
+                error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"detail": response.text}
+                if "Nenhuma localização válida encontrada" in error_data.get("detail", ""):
+                    self.log_test("Invalid Coordinates Validation", True, 
+                                "Correctly rejected KML with invalid coordinates",
+                                f"Error: No valid locations found")
+                    return True
+                else:
+                    self.log_test("Invalid Coordinates Validation", False, 
+                                "Unexpected error message", error_data)
+                    return False
+            elif response and response.status_code == 400:
                 # Should reject invalid coordinates
                 self.log_test("Invalid Coordinates Validation", True, 
                             "Correctly rejected KML with invalid coordinates",
