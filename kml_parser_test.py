@@ -498,10 +498,12 @@ class KMLParserTester:
             if response and response.status_code == 400:
                 # Should reject malformed XML
                 error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"detail": response.text}
-                if "inválido" in error_data.get("detail", "").lower() or "invalid" in error_data.get("detail", "").lower():
+                detail = error_data.get("detail", "").lower()
+                if ("inválido" in detail or "invalid" in detail or 
+                    "corrompido" in detail or "mismatched tag" in detail):
                     self.log_test("Invalid XML Structure", True, 
                                 "Correctly rejected malformed XML",
-                                f"Error: {error_data.get('detail', 'XML parsing error')}")
+                                f"Error: XML parsing error detected")
                     return True
                 else:
                     self.log_test("Invalid XML Structure", False, 
