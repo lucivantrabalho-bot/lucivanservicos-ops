@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+const API_BASE = process.env.REACT_APP_BACKEND_URL ? process.env.REACT_APP_BACKEND_URL + '/api' : '/api';
 
 export default function FinalizeModal({ 
   isOpen, 
