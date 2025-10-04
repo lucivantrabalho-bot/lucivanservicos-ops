@@ -976,6 +976,307 @@ class BackendTester:
             self.log_test("User Individual Stats", False, f"Request failed: {str(e)}")
             return False
 
+    def test_register_pending_status(self):
+        """Test POST /api/register returns PENDING status for new users"""
+        try:
+            test_username = f"pendinguser_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            test_password = "testpass123"
+            
+            response = requests.post(
+                f"{self.base_url}/register",
+                json={"username": test_username, "password": test_password},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["access_token", "token_type", "user_id", "username", "role", "status"]
+                
+                if all(field in data for field in required_fields):
+                    if data["status"] == "PENDING":
+                        self.log_test("Register PENDING Status", True, 
+                                    f"New user {test_username} correctly registered with PENDING status",
+                                    f"Token provided: {data['access_token'][:20]}...")
+                        return test_username, test_password, data["access_token"]
+                    else:
+                        self.log_test("Register PENDING Status", False, 
+                                    f"Expected PENDING status but got: {data['status']}")
+                        return None, None, None
+                else:
+                    self.log_test("Register PENDING Status", False, 
+                                "Missing required fields in response", data)
+                    return None, None, None
+            else:
+                self.log_test("Register PENDING Status", False, 
+                            f"Registration failed with status {response.status_code}", response.text)
+                return None, None, None
+                
+        except Exception as e:
+            self.log_test("Register PENDING Status", False, f"Request failed: {str(e)}")
+            return None, None, None
+
+    def test_login_pending_user(self, username, password):
+        """Test login with PENDING user - should be blocked"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if response.status_code == 403:
+                error_detail = response.json().get("detail", "")
+                if "pending" in error_detail.lower():
+                    self.log_test("Login PENDING User", True, 
+                                f"PENDING user {username} correctly blocked from login",
+                                f"Error: {error_detail}")
+                    return True
+                else:
+                    self.log_test("Login PENDING User", False, 
+                                f"Wrong error message for PENDING user: {error_detail}")
+                    return False
+            else:
+                self.log_test("Login PENDING User", False, 
+                            f"PENDING user should be blocked but got status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Login PENDING User", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_reports_timeline(self):
+        """Test GET /api/reports/timeline - timeline data"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/reports/timeline",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                timeline_data = response.json()
+                if isinstance(timeline_data, list):
+                    if len(timeline_data) > 0:
+                        # Check structure of first item
+                        first_item = timeline_data[0]
+                        required_fields = ["period", "year", "month", "total", "pending", "finished", "approved"]
+                        if all(field in first_item for field in required_fields):
+                            self.log_test("Reports Timeline", True, 
+                                        f"Retrieved timeline data with {len(timeline_data)} periods",
+                                        f"Sample: {first_item['period']} - Total: {first_item['total']}")
+                            return True
+                        else:
+                            self.log_test("Reports Timeline", False, 
+                                        "Missing required fields in timeline data", first_item)
+                            return False
+                    else:
+                        self.log_test("Reports Timeline", True, 
+                                    "Timeline endpoint working - no data available (empty list)")
+                        return True
+                else:
+                    self.log_test("Reports Timeline", False, 
+                                "Timeline data should be a list", timeline_data)
+                    return False
+            else:
+                self.log_test("Reports Timeline", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Reports Timeline", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_reports_distribution(self):
+        """Test GET /api/reports/distribution - distribution by type, site, status"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/reports/distribution",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                distribution_data = response.json()
+                required_sections = ["by_type", "by_site", "by_status"]
+                
+                if all(section in distribution_data for section in required_sections):
+                    # Check structure
+                    by_type = distribution_data["by_type"]
+                    by_site = distribution_data["by_site"]
+                    by_status = distribution_data["by_status"]
+                    
+                    if (isinstance(by_type, list) and isinstance(by_site, list) and isinstance(by_status, list)):
+                        self.log_test("Reports Distribution", True, 
+                                    f"Retrieved distribution data",
+                                    f"Types: {len(by_type)}, Sites: {len(by_site)}, Statuses: {len(by_status)}")
+                        return True
+                    else:
+                        self.log_test("Reports Distribution", False, 
+                                    "Distribution sections should be lists", distribution_data)
+                        return False
+                else:
+                    self.log_test("Reports Distribution", False, 
+                                "Missing required sections in distribution data", distribution_data)
+                    return False
+            else:
+                self.log_test("Reports Distribution", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Reports Distribution", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_reports_performance(self):
+        """Test GET /api/reports/performance - user performance data"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/reports/performance",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                performance_data = response.json()
+                required_sections = ["top_creators", "top_finalizers", "period"]
+                
+                if all(section in performance_data for section in required_sections):
+                    top_creators = performance_data["top_creators"]
+                    top_finalizers = performance_data["top_finalizers"]
+                    period = performance_data["period"]
+                    
+                    if isinstance(top_creators, list) and isinstance(top_finalizers, list):
+                        self.log_test("Reports Performance", True, 
+                                    f"Retrieved performance data for {period}",
+                                    f"Top creators: {len(top_creators)}, Top finalizers: {len(top_finalizers)}")
+                        return True
+                    else:
+                        self.log_test("Reports Performance", False, 
+                                    "Performance sections should be lists", performance_data)
+                        return False
+                else:
+                    self.log_test("Reports Performance", False, 
+                                "Missing required sections in performance data", performance_data)
+                    return False
+            else:
+                self.log_test("Reports Performance", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Reports Performance", False, f"Request failed: {str(e)}")
+            return False
+
+    def create_test_pendencia(self):
+        """Create a test pendencia for deletion testing"""
+        try:
+            pendencia_data = {
+                "site": "TEST_SITE_DELETE",
+                "tipo": "Energia",
+                "subtipo": "Controladora",
+                "observacoes": "Test pendencia for deletion",
+                "foto_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/pendencias",
+                headers=self.get_auth_headers(),
+                json=pendencia_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                pendencia = response.json()
+                self.log_test("Create Test Pendencia", True, 
+                            f"Created test pendencia for deletion testing",
+                            f"ID: {pendencia['id']}")
+                return pendencia["id"]
+            else:
+                self.log_test("Create Test Pendencia", False, 
+                            f"Failed to create test pendencia: {response.status_code}", response.text)
+                return None
+                
+        except Exception as e:
+            self.log_test("Create Test Pendencia", False, f"Request failed: {str(e)}")
+            return None
+
+    def test_admin_delete_pendencia(self):
+        """Test DELETE /api/admin/delete-pendencia/{pendencia_id}"""
+        try:
+            # First create a test pendencia
+            pendencia_id = self.create_test_pendencia()
+            if not pendencia_id:
+                self.log_test("Admin Delete Pendencia", False, "Failed to create test pendencia")
+                return False
+            
+            # Now delete it as admin
+            response = requests.delete(
+                f"{self.base_url}/admin/delete-pendencia/{pendencia_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result:
+                    self.log_test("Admin Delete Pendencia", True, 
+                                f"Successfully deleted pendencia {pendencia_id}",
+                                f"Message: {result['message']}")
+                    return True
+                else:
+                    self.log_test("Admin Delete Pendencia", False, 
+                                "No success message in response", result)
+                    return False
+            else:
+                self.log_test("Admin Delete Pendencia", False, 
+                            f"Delete failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Delete Pendencia", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_authentication_required(self):
+        """Test that endpoints require proper authentication"""
+        try:
+            # Test without token
+            endpoints_to_test = [
+                "/reports/timeline",
+                "/reports/distribution", 
+                "/reports/performance",
+                "/admin/delete-pendencia/test-id"
+            ]
+            
+            auth_tests_passed = 0
+            total_auth_tests = len(endpoints_to_test)
+            
+            for endpoint in endpoints_to_test:
+                if endpoint.startswith("/admin/delete-pendencia"):
+                    response = requests.delete(f"{self.base_url}{endpoint}", timeout=10)
+                else:
+                    response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+                
+                if response.status_code == 401:
+                    auth_tests_passed += 1
+                    self.log_test(f"Auth Required - {endpoint}", True, 
+                                "Correctly requires authentication")
+                else:
+                    self.log_test(f"Auth Required - {endpoint}", False, 
+                                f"Should require auth but got status {response.status_code}")
+            
+            if auth_tests_passed == total_auth_tests:
+                self.log_test("Authentication Required", True, 
+                            f"All {total_auth_tests} endpoints correctly require authentication")
+                return True
+            else:
+                self.log_test("Authentication Required", False, 
+                            f"Only {auth_tests_passed}/{total_auth_tests} endpoints require auth")
+                return False
+                
+        except Exception as e:
+            self.log_test("Authentication Required", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all new feature tests"""
         print("=" * 80)
@@ -983,9 +1284,10 @@ class BackendTester:
         print("=" * 80)
         print(f"Testing against: {self.base_url}")
         print("Testing newly implemented features:")
-        print("1. Monthly Statistics (with validation filter)")
-        print("2. Form Configuration Management")
-        print("3. User Profile Management")
+        print("1. Fixed Registration Flow (PENDING status)")
+        print("2. New Report Endpoints (timeline, distribution, performance)")
+        print("3. Admin Delete Pendency Endpoint")
+        print("4. Authentication verification")
         print()
         
         # Step 1: Login as admin
@@ -995,31 +1297,56 @@ class BackendTester:
         
         print()
         
-        # Test 1: Monthly Statistics
-        print("🔍 Testing Monthly Statistics...")
-        self.test_monthly_stats()
+        # Test 1: Registration Flow with PENDING status
+        print("🔍 Testing Registration Flow...")
+        test_username, test_password, pending_token = self.test_register_pending_status()
         print()
         
-        # Test 2: Form Configuration
-        print("🔍 Testing Form Configuration...")
-        original_config = self.test_get_form_config()
+        if test_username:
+            # Test login with PENDING user (should be blocked)
+            print("🔍 Testing Login with PENDING User...")
+            self.test_login_pending_user(test_username, test_password)
+            print()
+        
+        # Test 2: New Report Endpoints
+        print("🔍 Testing Report Endpoints...")
+        self.test_reports_timeline()
         print()
-        self.test_update_form_config()
+        self.test_reports_distribution()
+        print()
+        self.test_reports_performance()
         print()
         
-        # Test 3: User Profile - Password Change
-        print("🔍 Testing User Password Change...")
-        self.test_user_change_password_valid()
-        print()
-        self.test_user_change_password_invalid_current()
-        print()
-        self.test_user_change_password_too_short()
+        # Test 3: Admin Delete Pendencia
+        print("🔍 Testing Admin Delete Pendencia...")
+        self.test_admin_delete_pendencia()
         print()
         
-        # Test 4: User Individual Statistics
-        print("🔍 Testing User Individual Statistics...")
-        self.test_user_individual_stats()
+        # Test 4: Authentication Requirements
+        print("🔍 Testing Authentication Requirements...")
+        self.test_authentication_required()
         print()
+        
+        # Cleanup: Delete test user if created
+        if test_username:
+            try:
+                users_response = requests.get(
+                    f"{self.base_url}/admin/all-users",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                if users_response.status_code == 200:
+                    users = users_response.json()
+                    test_user = next((u for u in users if u.get("username") == test_username), None)
+                    if test_user:
+                        requests.delete(
+                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                        print(f"🧹 Cleaned up test user: {test_username}")
+            except:
+                pass
         
         print("=" * 80)
         print("TEST SUMMARY")
