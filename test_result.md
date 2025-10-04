@@ -267,9 +267,11 @@
 
 ## test_plan:
   current_focus:
-    - "Nova aba 'Usuários Cadastrados' no AdminPanel"
-    - "Modal de Reset de Senha"
-    - "Modal de Confirmação de Exclusão"
+    - "Monthly Statistics with Validation Filter - /stats/monthly"
+    - "Form Configuration Management - GET /admin/form-config"
+    - "Form Configuration Management - PUT /admin/form-config"
+    - "User Password Change - PUT /user/change-password"
+    - "Individual User Statistics - GET /user/stats"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
