@@ -363,9 +363,7 @@
 
 ## test_plan:
   current_focus:
-    - "Dashboard Statistics Advanced - POST /reports/dashboard-stats"
-    - "Export Advanced - POST /reports/export-advanced"
-    - "Performance Metrics - GET /reports/performance-metrics"
+    - "Login functionality investigation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
