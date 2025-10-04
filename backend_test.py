@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+"""
+Backend API Testing Script for Admin User Management Endpoints
+Tests the admin user management functionality including:
+- GET /api/admin/all-users
+- DELETE /api/admin/delete-user/{user_id}
+- PUT /api/admin/reset-password/{user_id}
+"""
+
+import requests
+import json
+import sys
+from datetime import datetime
+
+# Configuration
+BASE_URL = "https://pendency-hub.preview.emergentagent.com/api"
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "admin123"
+
+class BackendTester:
+    def __init__(self):
+        self.base_url = BASE_URL
+        self.admin_token = None
+        self.admin_user_id = None
+        self.test_results = []
+        
+    def log_test(self, test_name, success, message, details=None):
+        """Log test results"""
+        result = {
+            "test": test_name,
+            "success": success,
+            "message": message,
+            "timestamp": datetime.now().isoformat(),
+            "details": details
+        }
+        self.test_results.append(result)
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} {test_name}: {message}")
+        if details:
+            print(f"   Details: {details}")
+    
+    def login_admin(self):
+        """Login as admin to get authentication token"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.admin_token = data["access_token"]
+                self.admin_user_id = data["user_id"]
+                self.log_test("Admin Login", True, "Successfully logged in as admin")
+                return True
+            else:
+                self.log_test("Admin Login", False, f"Login failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Login", False, f"Login request failed: {str(e)}")
+            return False
+    
+    def get_auth_headers(self):
+        """Get authorization headers"""
+        return {"Authorization": f"Bearer {self.admin_token}"}
+    
+    def test_get_all_users(self):
+        """Test GET /api/admin/all-users endpoint"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                users = response.json()
+                if isinstance(users, list) and len(users) > 0:
+                    # Check if admin user is present
+                    admin_found = any(user.get("username") == ADMIN_USERNAME for user in users)
+                    if admin_found:
+                        self.log_test("Get All Users", True, f"Retrieved {len(users)} users including admin", 
+                                    f"Users: {[u.get('username') for u in users]}")
+                        return users
+                    else:
+                        self.log_test("Get All Users", False, "Admin user not found in user list", users)
+                        return users
+                else:
+                    self.log_test("Get All Users", False, "No users returned or invalid response format", users)
+                    return []
+            else:
+                self.log_test("Get All Users", False, f"Request failed with status {response.status_code}", response.text)
+                return []
+                
+        except Exception as e:
+            self.log_test("Get All Users", False, f"Request failed: {str(e)}")
+            return []
+    
+    def test_reset_password_valid(self, user_id, username):
+        """Test password reset with valid password (≥4 characters)"""
+        try:
+            new_password = "newpass123"
+            response = requests.put(
+                f"{self.base_url}/admin/reset-password/{user_id}",
+                headers=self.get_auth_headers(),
+                json={"new_password": new_password},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                self.log_test("Reset Password (Valid)", True, f"Successfully reset password for user {username}")
+                return True
+            else:
+                self.log_test("Reset Password (Valid)", False, 
+                            f"Password reset failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Reset Password (Valid)", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_reset_password_invalid(self, user_id, username):
+        """Test password reset with invalid password (<4 characters)"""
+        try:
+            new_password = "123"  # Less than 4 characters
+            response = requests.put(
+                f"{self.base_url}/admin/reset-password/{user_id}",
+                headers=self.get_auth_headers(),
+                json={"new_password": new_password},
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                self.log_test("Reset Password (Invalid)", True, 
+                            f"Correctly rejected short password for user {username}")
+                return True
+            else:
+                self.log_test("Reset Password (Invalid)", False, 
+                            f"Should have rejected short password but got status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Reset Password (Invalid)", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_delete_own_account(self):
+        """Test that admin cannot delete their own account"""
+        try:
+            response = requests.delete(
+                f"{self.base_url}/admin/delete-user/{self.admin_user_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                self.log_test("Delete Own Account Protection", True, 
+                            "Correctly prevented admin from deleting own account")
+                return True
+            else:
+                self.log_test("Delete Own Account Protection", False, 
+                            f"Should have prevented self-deletion but got status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Delete Own Account Protection", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_delete_other_user(self, user_id, username):
+        """Test deletion of another user"""
+        try:
+            response = requests.delete(
+                f"{self.base_url}/admin/delete-user/{user_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                self.log_test("Delete Other User", True, f"Successfully deleted user {username}")
+                return True
+            else:
+                self.log_test("Delete Other User", False, 
+                            f"User deletion failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Delete Other User", False, f"Request failed: {str(e)}")
+            return False
+    
+    def create_test_user(self):
+        """Create a test user for deletion testing"""
+        try:
+            test_username = f"testuser_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            response = requests.post(
+                f"{self.base_url}/register",
+                json={"username": test_username, "password": "testpass123"},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                self.log_test("Create Test User", True, f"Created test user {test_username}")
+                return test_username
+            else:
+                self.log_test("Create Test User", False, 
+                            f"Failed to create test user with status {response.status_code}", response.text)
+                return None
+                
+        except Exception as e:
+            self.log_test("Create Test User", False, f"Request failed: {str(e)}")
+            return None
+    
+    def run_all_tests(self):
+        """Run all admin user management tests"""
+        print("=" * 60)
+        print("BACKEND API TESTING - ADMIN USER MANAGEMENT")
+        print("=" * 60)
+        print(f"Testing against: {self.base_url}")
+        print()
+        
+        # Step 1: Login as admin
+        if not self.login_admin():
+            print("❌ Cannot proceed without admin authentication")
+            return False
+        
+        print()
+        
+        # Step 2: Test get all users
+        users = self.test_get_all_users()
+        print()
+        
+        # Step 3: Test password reset with valid password
+        if users:
+            # Find a non-admin user or use admin for testing
+            test_user = None
+            for user in users:
+                if user.get("username") != ADMIN_USERNAME:
+                    test_user = user
+                    break
+            
+            if not test_user:
+                test_user = next((u for u in users if u.get("username") == ADMIN_USERNAME), None)
+            
+            if test_user:
+                self.test_reset_password_valid(test_user["id"], test_user["username"])
+                print()
+                self.test_reset_password_invalid(test_user["id"], test_user["username"])
+                print()
+        
+        # Step 4: Test admin cannot delete own account
+        self.test_delete_own_account()
+        print()
+        
+        # Step 5: Test user deletion (create a test user first)
+        test_username = self.create_test_user()
+        if test_username:
+            # Get the created user's ID
+            updated_users = self.test_get_all_users()
+            test_user = next((u for u in updated_users if u.get("username") == test_username), None)
+            if test_user:
+                print()
+                self.test_delete_other_user(test_user["id"], test_user["username"])
+        
+        print()
+        print("=" * 60)
+        print("TEST SUMMARY")
+        print("=" * 60)
+        
+        passed = sum(1 for result in self.test_results if result["success"])
+        total = len(self.test_results)
+        
+        print(f"Total Tests: {total}")
+        print(f"Passed: {passed}")
+        print(f"Failed: {total - passed}")
+        print(f"Success Rate: {(passed/total)*100:.1f}%" if total > 0 else "0%")
+        
+        # Show failed tests
+        failed_tests = [result for result in self.test_results if not result["success"]]
+        if failed_tests:
+            print("\nFAILED TESTS:")
+            for test in failed_tests:
+                print(f"  - {test['test']}: {test['message']}")
+        
+        return passed == total
+
+if __name__ == "__main__":
+    tester = BackendTester()
+    success = tester.run_all_tests()
+    sys.exit(0 if success else 1)
