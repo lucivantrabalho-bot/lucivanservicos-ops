@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { testConnection } from '../utils/connectionTest';
 
 const AuthContext = createContext();
 
