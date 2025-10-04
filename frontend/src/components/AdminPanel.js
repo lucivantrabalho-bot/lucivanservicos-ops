@@ -592,7 +592,7 @@ export default function AdminPanel() {
             
             <p className="text-slate-600 mb-6">
               Tem certeza que deseja excluir o usuário <strong>{deleteUserModal.user?.username}</strong>? 
-              Esta ação não pode ser desfeita.
+              Esta ação não pode ser desfeita e o usuário perderá acesso imediatamente.
             </p>
             
             <div className="flex justify-end space-x-3">
