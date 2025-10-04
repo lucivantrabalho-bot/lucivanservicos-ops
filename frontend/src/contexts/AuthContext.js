@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Configure axios defaults
   useEffect(() => {
