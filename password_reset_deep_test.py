@@ -14,7 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 
 # Configuration
-BASE_URL = "https://pendency-hub.preview.emergentagent.com/api"
+BASE_URL = "https://continuar-3.preview.emergentagent.com/api"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 SECRET_KEY = "your-secret-key-here-change-in-production-very-long-secret-key"

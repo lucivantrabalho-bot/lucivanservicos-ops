@@ -15,7 +15,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://pendency-hub.preview.emergentagent.com/api"
+BASE_URL = "https://continuar-3.preview.emergentagent.com/api"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 
