@@ -47,6 +47,36 @@ export default function CreatePendencia() {
   const [arconOptions, setArconOptions] = useState([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
 
+  // Carregar opções do formulário
+  useEffect(() => {
+    const loadFormOptions = async () => {
+      try {
+        const response = await axios.get(`${API_BASE}/admin/form-config`);
+        setEnergiaOptions(response.data.energia_options || []);
+        setArconOptions(response.data.arcon_options || []);
+      } catch (err) {
+        console.error('Error loading form options:', err);
+        // Fallback para opções padrão se a API falhar
+        setEnergiaOptions([
+          'Controladora', 'QDCA', 'QM', 'Retificador', 'Disjuntor',
+          'Bateria', 'Iluminação Pátio', 'Sensor de Porta',
+          'Sensor de Incêndio', 'Iluminação Gabinete/Container',
+          'Cabo de Alimentação'
+        ]);
+        setArconOptions([
+          'Trocador de Calor', 'Sanrio', 'Walmont', 'Limpeza',
+          'Contatora', 'Compressor', 'Gás', 'Fusível',
+          'Placa Queimada', 'Transformador', 'Relé Térmico',
+          'Relé Falta de Fase', 'Comando', 'Alarme'
+        ]);
+      } finally {
+        setOptionsLoading(false);
+      }
+    };
+
+    loadFormOptions();
+  }, []);
+
   // Função para converter arquivo para base64
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
