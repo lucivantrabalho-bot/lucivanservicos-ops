@@ -1,0 +1,400 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { 
+  Users, 
+  CheckCircle2, 
+  XCircle, 
+  ArrowLeft,
+  AlertTriangle,
+  Clock,
+  Eye,
+  UserCheck,
+  UserX,
+  Trophy,
+  Calendar
+} from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
+
+const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+
+export default function AdminPanel() {
+  const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [allPendencias, setAllPendencias] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/dashboard');
+    }
+  }, [isAdmin, navigate]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadPendingUsers();
+      loadAllPendencias();
+      loadMonthlyStats();
+    }
+  }, [isAdmin]);
+
+  const loadPendingUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/admin/pending-users`);
+      setPendingUsers(response.data);
+    } catch (err) {
+      console.error('Error loading pending users:', err);
+    }
+  };
+
+  const loadAllPendencias = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/admin/pendencias`);
+      setAllPendencias(response.data);
+    } catch (err) {
+      console.error('Error loading pendencias:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMonthlyStats = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/stats/monthly`);
+      setMonthlyStats(response.data);
+    } catch (err) {
+      console.error('Error loading monthly stats:', err);
+    }
+  };
+
+  const handleUserApproval = async (userId, status) => {
+    try {
+      await axios.put(`${API_BASE}/admin/approve-user/${userId}`, { status });
+      setSuccess(`Usuário ${status === 'APPROVED' ? 'aprovado' : 'rejeitado'} com sucesso!`);
+      setTimeout(() => setSuccess(''), 3000);
+      loadPendingUsers();
+    } catch (err) {
+      setError('Erro ao processar aprovação');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handlePendenciaValidation = async (pendenciaId, status, notes = '') => {
+    try {
+      await axios.put(`${API_BASE}/admin/validate-pendencia/${pendenciaId}`, {
+        status,
+        validation_notes: notes
+      });
+      setSuccess(`Pendência ${status === 'APPROVED' ? 'aprovada' : 'rejeitada'} com sucesso!`);
+      setTimeout(() => setSuccess(''), 3000);
+      loadAllPendencias();
+    } catch (err) {
+      setError('Erro ao validar pendência');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center py-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              data-testid="back-to-dashboard"
+              className="mr-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">Painel Administrativo</h1>
+                <p className="text-sm text-slate-600">Gerenciar usuários e validações</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Alerts */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert className="mb-6 border-emerald-200 bg-emerald-50">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-700">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="users">Usuários Pendentes ({pendingUsers.length})</TabsTrigger>
+            <TabsTrigger value="pendencias">Validar Pendências</TabsTrigger>
+            <TabsTrigger value="stats">Estatísticas Mensais</TabsTrigger>
+          </TabsList>
+
+          {/* Usuários Pendentes */}
+          <TabsContent value="users" className="space-y-4">
+            {pendingUsers.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <UserCheck className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhum usuário pendente</h3>
+                  <p className="text-slate-600">Todos os usuários foram aprovados ou rejeitados</p>
+                </CardContent>
+              </Card>
+            ) : (
+              pendingUsers.map((user) => (
+                <Card key={user.id} className="glass">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                          <Users className="w-5 h-5 text-slate-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{user.username}</h3>
+                          <p className="text-sm text-slate-600">
+                            Solicitado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => handleUserApproval(user.id, 'APPROVED')}
+                          className="btn-hover bg-emerald-500 hover:bg-emerald-600 text-white"
+                          size="sm"
+                          data-testid="approve-user-btn"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Aprovar
+                        </Button>
+                        <Button
+                          onClick={() => handleUserApproval(user.id, 'REJECTED')}
+                          variant="outline"
+                          size="sm"
+                          className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                          data-testid="reject-user-btn"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Rejeitar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* Validar Pendências */}
+          <TabsContent value="pendencias" className="space-y-4">
+            {allPendencias.filter(p => p.status === 'Finalizado' && !p.validation_status).length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhuma pendência para validar</h3>
+                  <p className="text-slate-600">Todas as pendências finalizadas foram validadas</p>
+                </CardContent>
+              </Card>
+            ) : (
+              allPendencias
+                .filter(p => p.status === 'Finalizado' && !p.validation_status)
+                .map((pendencia) => (
+                  <Card key={pendencia.id} className="glass">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Badge className="bg-orange-100 text-orange-700">
+                                Aguardando Validação
+                              </Badge>
+                              <Badge variant="outline">
+                                {pendencia.tipo} - {pendencia.subtipo}
+                              </Badge>
+                            </div>
+                            <h3 className="font-semibold text-slate-900">{pendencia.site}</h3>
+                            <p className="text-sm text-slate-600">{pendencia.observacoes}</p>
+                            <p className="text-sm text-slate-600">
+                              Finalizado por: <span className="font-medium">{pendencia.usuario_finalizacao}</span>
+                            </p>
+                            {pendencia.informacoes_fechamento && (
+                              <div className="bg-slate-50 p-3 rounded-lg">
+                                <p className="text-sm text-slate-600">
+                                  <span className="font-medium">Informações de Fechamento:</span>
+                                </p>
+                                <p className="text-sm text-slate-800">{pendencia.informacoes_fechamento}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex space-x-2">
+                            {pendencia.foto_base64 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newWindow = window.open();
+                                  newWindow.document.write(`
+                                    <html>
+                                      <head><title>Foto da Abertura</title></head>
+                                      <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5;">
+                                        <img src="data:image/jpeg;base64,${pendencia.foto_base64}" style="max-width: 90%; max-height: 90%; object-fit: contain;" />
+                                      </body>
+                                    </html>
+                                  `);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver Foto Abertura
+                              </Button>
+                            )}
+                            
+                            {pendencia.foto_fechamento_base64 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newWindow = window.open();
+                                  newWindow.document.write(`
+                                    <html>
+                                      <head><title>Foto do Fechamento</title></head>
+                                      <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5;">
+                                        <img src="data:image/jpeg;base64,${pendencia.foto_fechamento_base64}" style="max-width: 90%; max-height: 90%; object-fit: contain;" />
+                                      </body>
+                                    </html>
+                                  `);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver Foto Fechamento
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => handlePendenciaValidation(pendencia.id, 'APPROVED')}
+                              className="btn-hover bg-emerald-500 hover:bg-emerald-600 text-white"
+                              size="sm"
+                              data-testid="approve-pendencia-btn"
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                              Aprovar
+                            </Button>
+                            <Button
+                              onClick={() => handlePendenciaValidation(pendencia.id, 'REJECTED', 'Pendência rejeitada pelo administrador')}
+                              variant="outline"
+                              size="sm"
+                              className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                              data-testid="reject-pendencia-btn"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Rejeitar
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+            )}
+          </TabsContent>
+
+          {/* Estatísticas Mensais */}
+          <TabsContent value="stats" className="space-y-6">
+            {monthlyStats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+                      Mais Criou Pendências
+                    </CardTitle>
+                    <CardDescription>
+                      {monthlyStats.month} {monthlyStats.year}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {monthlyStats.most_created ? (
+                      <div className="text-center py-4">
+                        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Trophy className="w-8 h-8 text-yellow-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900">{monthlyStats.most_created._id}</h3>
+                        <p className="text-slate-600">{monthlyStats.most_created.count} pendências criadas</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <Calendar className="w-8 h-8 mx-auto mb-2" />
+                        <p>Nenhuma pendência criada este mês</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Trophy className="w-5 h-5 mr-2 text-emerald-500" />
+                      Mais Finalizou Pendências
+                    </CardTitle>
+                    <CardDescription>
+                      {monthlyStats.month} {monthlyStats.year}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {monthlyStats.most_finished ? (
+                      <div className="text-center py-4">
+                        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Trophy className="w-8 h-8 text-emerald-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900">{monthlyStats.most_finished._id}</h3>
+                        <p className="text-slate-600">{monthlyStats.most_finished.count} pendências finalizadas</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <Calendar className="w-8 h-8 mx-auto mb-2" />
+                        <p>Nenhuma pendência finalizada este mês</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
