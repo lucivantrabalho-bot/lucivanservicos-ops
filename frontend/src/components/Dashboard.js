@@ -268,14 +268,16 @@ export default function Dashboard() {
                 Perfil
               </Button>
               
-              <Button
-                onClick={() => navigate('/reports')}
-                data-testid="reports-btn"
-                className="btn-hover bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Relatórios
-              </Button>
+              {isAdmin && (
+                <Button
+                  onClick={() => navigate('/reports')}
+                  data-testid="reports-btn"
+                  className="btn-hover bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Relatórios
+                </Button>
+              )}
               
               <Button
                 onClick={logout}
