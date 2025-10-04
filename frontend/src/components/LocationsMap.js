@@ -80,9 +80,80 @@ export default function LocationsMap() {
   };
 
   const openAllInMaps = () => {
-    const coords = filteredLocations.map(loc => `${loc.latitude},${loc.longitude}`).join('|');
+    const coords = locations.map(loc => `${loc.latitude},${loc.longitude}`).join('|');
     const url = `https://www.google.com/maps/dir/${coords}`;
     window.open(url, '_blank');
+  };
+
+  // Observation functions
+  const openObservationModal = async (location) => {
+    setObservationModal({
+      isOpen: true,
+      location: location,
+      observations: []
+    });
+    
+    // Load existing observations
+    try {
+      const response = await axios.get(`${API_BASE}/kml/locations/${location.id}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+    } catch (err) {
+      console.error('Error loading observations:', err);
+    }
+  };
+
+  const closeObservationModal = () => {
+    setObservationModal({
+      isOpen: false,
+      location: null,
+      observations: []
+    });
+    setNewObservation('');
+  };
+
+  const addObservation = async () => {
+    if (!newObservation.trim()) {
+      return;
+    }
+
+    try {
+      await axios.post(`${API_BASE}/kml/locations/${observationModal.location.id}/observations`, {
+        observation: newObservation.trim()
+      });
+
+      // Reload observations
+      const response = await axios.get(`${API_BASE}/kml/locations/${observationModal.location.id}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+      
+      setNewObservation('');
+    } catch (err) {
+      console.error('Error adding observation:', err);
+      setError('Erro ao adicionar observação');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const deleteObservation = async (observationId) => {
+    try {
+      await axios.delete(`${API_BASE}/kml/observations/${observationId}`);
+      
+      // Reload observations
+      const response = await axios.get(`${API_BASE}/kml/locations/${observationModal.location.id}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+    } catch (err) {
+      console.error('Error deleting observation:', err);
+      setError('Erro ao excluir observação');
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   if (loading) {
