@@ -12,7 +12,11 @@ import {
   Filter,
   Map,
   RefreshCw,
-  FileText
+  FileText,
+  MessageSquare,
+  Plus,
+  Trash2,
+  User
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
