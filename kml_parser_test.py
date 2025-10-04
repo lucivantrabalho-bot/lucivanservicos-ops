@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-KML Parser Enhanced Testing Script
-Tests the robust KML parser functionality with different KML structures and formats
-as requested in the review.
+KML Parser Robustness Testing Script
+Tests the enhanced KML parser with complex KML files as requested in Portuguese review.
 
-Tests include:
-1. Simple KML with basic Placemark structure
-2. KML with ExtendedData and SimpleData elements
-3. Different coordinate formats and encodings
-4. Coordinate validation and range checking
-5. Name and description extraction
-6. Error handling for invalid KML files
+Objetivo: Verificar se o parser KML melhorado consegue processar arquivos KML reais corretamente
+
+Testa:
+1. POST /api/admin/upload-kml - Upload e parsing de KML
+2. GET /api/kml/locations - Listar localizações importadas  
+3. DELETE /api/admin/kml/{kml_id} - Excluir dados KML
+4. KML complexo com múltiplos Placemarks, ExtendedData, diferentes formatos
 """
 
 import requests
