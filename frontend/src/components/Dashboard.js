@@ -37,6 +37,8 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function Dashboard() {
   const { user, logout, isAdmin } = useAuth();
+  const { success, error: showError, info } = useNotification();
+  const { isMobile, isDesktop } = useResponsive();
   const navigate = useNavigate();
   
   const [pendencias, setPendencias] = useState([]);
