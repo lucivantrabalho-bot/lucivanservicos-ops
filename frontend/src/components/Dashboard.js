@@ -125,8 +125,7 @@ export default function Dashboard() {
   };
 
   const handleFinalizeSuccess = () => {
-    setSuccess('Pendência finalizada com sucesso!');
-    setTimeout(() => setSuccess(''), 3000);
+    success('Pendência finalizada com sucesso!');
     loadPendencias();
   };
 
