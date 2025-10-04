@@ -35,38 +35,43 @@ export default function LocationsMap() {
   });
   const [newObservation, setNewObservation] = useState('');
 
-  useEffect(() => {
-    loadLocations();
-  }, []);
+  const searchLocations = async () => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setError('Digite pelo menos 2 caracteres para buscar');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
 
-  useEffect(() => {
-    filterLocations();
-  }, [searchTerm, locations]);
-
-  const loadLocations = async () => {
-    setLoading(true);
+    setSearching(true);
+    setError('');
+    
     try {
-      const response = await axios.get(`${API_BASE}/kml/locations`);
-      setLocations(response.data);
+      const response = await axios.get(`${API_BASE}/kml/search`, {
+        params: { query: searchTerm, limit: 50 }
+      });
+      
+      setLocations(response.data.locations || []);
+      setSearchPerformed(true);
     } catch (err) {
-      console.error('Error loading locations:', err);
-      setError('Erro ao carregar localizações');
+      console.error('Error searching locations:', err);
+      setError('Erro ao buscar localizações');
+      setLocations([]);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
 
-  const filterLocations = () => {
-    if (!searchTerm) {
-      setFilteredLocations(locations);
-    } else {
-      const filtered = locations.filter(location => 
-        location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (location.description && location.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        location.source_file.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredLocations(filtered);
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      searchLocations();
     }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setLocations([]);
+    setSearchPerformed(false);
+    setError('');
   };
 
   const openInMaps = (latitude, longitude, name) => {
