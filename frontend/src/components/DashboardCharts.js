@@ -396,6 +396,7 @@ export default function DashboardCharts() {
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
