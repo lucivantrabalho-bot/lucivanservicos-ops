@@ -2,11 +2,11 @@
 """
 Backend API Testing Script for New Features
 Tests the newly implemented functionality including:
-- GET /api/stats/monthly (Monthly Statistics with validation filter)
-- GET /api/admin/form-config (Form Configuration)
-- PUT /api/admin/form-config (Update Form Configuration)
-- PUT /api/user/change-password (User Password Change)
-- GET /api/user/stats (Individual User Statistics)
+1. Fixed Registration Flow - POST /api/register returns PENDING status
+2. New Report Endpoints - timeline, distribution, performance
+3. Admin Delete Pendency - DELETE /api/admin/delete-pendencia/{id}
+4. Login with PENDING status verification
+5. Authentication verification for all endpoints
 """
 
 import requests
