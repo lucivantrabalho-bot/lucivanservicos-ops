@@ -78,8 +78,8 @@ export default function Login() {
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <ClipboardList className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">PendênciaHub</h1>
-          <p className="text-slate-600">Sistema de Gerenciamento de Pendências</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Gerenciador CN19</h1>
+          <p className="text-slate-600">Sistema de Gerenciamento de informações do CN19</p>
         </div>
 
         <Card className="glass shadow-2xl border-0">
