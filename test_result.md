@@ -348,11 +348,9 @@
 
 ## test_plan:
   current_focus:
-    - "Monthly Statistics with Validation Filter - /stats/monthly"
-    - "Form Configuration Management - GET /admin/form-config"
-    - "Form Configuration Management - PUT /admin/form-config"
-    - "User Password Change - PUT /user/change-password"
-    - "Individual User Statistics - GET /user/stats"
+    - "Dashboard Statistics Advanced - POST /reports/dashboard-stats"
+    - "Export Advanced - POST /reports/export-advanced"
+    - "Performance Metrics - GET /reports/performance-metrics"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
