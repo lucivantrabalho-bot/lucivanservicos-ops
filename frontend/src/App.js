@@ -82,13 +82,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="App">
-          <AppRoutes />
-        </div>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="App min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+            <AppRoutes />
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
