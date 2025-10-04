@@ -913,7 +913,7 @@ async def get_location_observations(
     """Get all observations for a specific location"""
     observations = await db.location_observations.find({
         "location_id": location_id
-    }).sort("created_at", -1).to_list(length=None)
+    }, {"_id": 0}).sort("created_at", -1).to_list(length=None)
     
     return observations
 
