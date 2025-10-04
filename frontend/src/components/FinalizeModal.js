@@ -185,7 +185,7 @@ export default function FinalizeModal({
 
           {/* Upload de Foto de Fechamento */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700">Foto do Fechamento (Opcional)</Label>
+            <Label className="text-sm font-medium text-slate-700">Foto do Fechamento *</Label>
             
             {!photo ? (
               <div
