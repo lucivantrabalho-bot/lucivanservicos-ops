@@ -380,17 +380,19 @@ export default function Dashboard() {
               </Select>
             </div>
             
-            <div className="flex justify-end mt-4">
-              <Button
-                onClick={handleExport}
-                variant="outline"
-                data-testid="export-btn"
-                className="btn-hover"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Exportar Excel
-              </Button>
-            </div>
+            {isAdmin && (
+              <div className="flex justify-end mt-4">
+                <Button
+                  onClick={handleExport}
+                  variant="outline"
+                  data-testid="export-btn"
+                  className="btn-hover"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar Excel
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
