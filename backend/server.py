@@ -96,6 +96,13 @@ class PendenciaEdit(BaseModel):
     observacoes: str
     foto_base64: Optional[str] = None
 
+class PendenciaEdit(BaseModel):
+    site: str
+    tipo: str
+    subtipo: str
+    observacoes: str
+    foto_base64: Optional[str] = None
+
 
 # Auth helpers
 def verify_password(plain_password, hashed_password):
