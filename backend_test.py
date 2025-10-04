@@ -221,7 +221,7 @@ class BackendTester:
         print("Testing reported issue: User can login with old password after admin reset")
         print()
         
-        # Step 1: Create a test user with known credentials
+        # Step 1: Create a test user and approve them immediately
         test_username = f"resettest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         original_password = "originalpass123"
         new_password = "newpass456"
@@ -242,6 +242,44 @@ class BackendTester:
             self.log_test("Password Reset Bug - Create Test User", True, 
                         f"Created test user: {test_username}")
             
+            # Get the user ID and approve the user
+            users_response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if users_response.status_code != 200:
+                self.log_test("Password Reset Bug - Get Users", False, 
+                            f"Failed to get users: {users_response.status_code}")
+                return False
+            
+            users = users_response.json()
+            test_user = next((u for u in users if u.get("username") == test_username), None)
+            
+            if not test_user:
+                self.log_test("Password Reset Bug - Find Test User", False, 
+                            f"Could not find created test user")
+                return False
+            
+            user_id = test_user["id"]
+            
+            # Approve the test user
+            approve_response = requests.put(
+                f"{self.base_url}/admin/approve-user/{user_id}",
+                headers=self.get_auth_headers(),
+                json={"status": "APPROVED"},
+                timeout=10
+            )
+            
+            if approve_response.status_code != 200:
+                self.log_test("Password Reset Bug - Approve User", False, 
+                            f"Failed to approve user: {approve_response.status_code}")
+                return False
+            
+            self.log_test("Password Reset Bug - Approve User", True, 
+                        f"Approved test user: {test_username}")
+            
             # Step 2: Verify original login works
             login_response = requests.post(
                 f"{self.base_url}/login",
@@ -255,7 +293,6 @@ class BackendTester:
                 return False
             
             original_token = login_response.json()["access_token"]
-            user_id = login_response.json()["user_id"]
             self.log_test("Password Reset Bug - Original Login", True, 
                         f"✅ Original password login successful")
             
