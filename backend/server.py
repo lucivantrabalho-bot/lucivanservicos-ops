@@ -264,6 +264,62 @@ async def update_pendencia(
     updated_pendencia = await db.pendencias.find_one({"id": pendencia_id})
     return Pendencia(**updated_pendencia)
 
+@api_router.put("/pendencias/{pendencia_id}/edit", response_model=Pendencia)
+async def edit_pendencia(
+    pendencia_id: str,
+    pendencia_edit: PendenciaEdit,
+    current_user: User = Depends(get_current_user)
+):
+    pendencia = await db.pendencias.find_one({"id": pendencia_id})
+    if not pendencia:
+        raise HTTPException(status_code=404, detail="Pendência não encontrada")
+    
+    # Verificar se a pendência ainda está pendente
+    if pendencia["status"] != "Pendente":
+        raise HTTPException(status_code=400, detail="Só é possível editar pendências com status 'Pendente'")
+    
+    # Verificar se o usuário é o criador da pendência ou se é admin
+    if pendencia["usuario_criacao"] != current_user.username:
+        # Por simplicidade, vou permitir que qualquer usuário edite qualquer pendência pendente
+        # Em produção, você poderia implementar roles de usuário
+        pass
+    
+    update_data = pendencia_edit.dict()
+    
+    await db.pendencias.update_one(
+        {"id": pendencia_id},
+        {"$set": update_data}
+    )
+    
+    updated_pendencia = await db.pendencias.find_one({"id": pendencia_id})
+    return Pendencia(**updated_pendencia)
+
+@api_router.delete("/pendencias/{pendencia_id}")
+async def delete_pendencia(
+    pendencia_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    pendencia = await db.pendencias.find_one({"id": pendencia_id})
+    if not pendencia:
+        raise HTTPException(status_code=404, detail="Pendência não encontrada")
+    
+    # Verificar se a pendência ainda está pendente
+    if pendencia["status"] != "Pendente":
+        raise HTTPException(status_code=400, detail="Só é possível excluir pendências com status 'Pendente'")
+    
+    # Verificar se o usuário é o criador da pendência ou se é admin
+    if pendencia["usuario_criacao"] != current_user.username:
+        # Por simplicidade, vou permitir que qualquer usuário exclua qualquer pendência pendente
+        # Em produção, você poderia implementar roles de usuário
+        pass
+    
+    result = await db.pendencias.delete_one({"id": pendencia_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Pendência não encontrada")
+    
+    return {"message": "Pendência excluída com sucesso"}
+
 @api_router.get("/pendencias/export")
 async def export_pendencias(
     site: Optional[str] = None,
