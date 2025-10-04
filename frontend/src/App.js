@@ -9,8 +9,9 @@ import CreatePendencia from './components/CreatePendencia';
 import AdminPanel from './components/AdminPanel';
 import UserProfile from './components/UserProfile';
 
-// Auth context
+// Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
