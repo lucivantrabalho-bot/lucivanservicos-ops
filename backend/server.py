@@ -91,7 +91,7 @@ class PendenciaCreate(BaseModel):
     tipo: str
     subtipo: str
     observacoes: str
-    foto_base64: str  # Agora obrigatória
+    foto_base64: str  # Obrigatória para novas pendências
 
 class PendenciaUpdate(BaseModel):
     status: str
