@@ -55,6 +55,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (isAdmin) {
       loadPendingUsers();
+      loadAllUsers();
       loadAllPendencias();
       loadMonthlyStats();
     }
