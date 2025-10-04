@@ -86,7 +86,7 @@ class PendenciaCreate(BaseModel):
     tipo: str
     subtipo: str
     observacoes: str
-    foto_base64: Optional[str] = None
+    foto_base64: str  # Agora obrigatória
 
 class PendenciaUpdate(BaseModel):
     status: str
