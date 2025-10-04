@@ -700,7 +700,7 @@ async def upload_kml_file(
         
         # Save to database
         kml_data = {
-            "id": str(uuid4()),
+            "id": str(uuid.uuid4()),
             "filename": file.filename,
             "uploaded_by": admin_user.username,
             "uploaded_at": datetime.now(timezone.utc),
