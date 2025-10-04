@@ -12,6 +12,7 @@ import UserProfile from './components/UserProfile';
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
