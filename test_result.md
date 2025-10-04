@@ -101,3 +101,98 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+## user_problem_statement: Implementar "Lista de usuários cadastrados no painel ADM com opções de excluir e reset de senha"
+
+## backend:
+  - task: "Endpoint get all users - /admin/all-users"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Endpoint já estava implementado anteriormente no backend"
+
+  - task: "Endpoint delete user - /admin/delete-user/{user_id}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Endpoint já estava implementado anteriormente no backend, inclui proteção para admin não excluir própria conta"
+
+  - task: "Endpoint reset password - /admin/reset-password/{user_id}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Endpoint já estava implementado anteriormente no backend com validação mínima de 4 caracteres"
+
+## frontend:
+  - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/AdminPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implementada nova aba com listagem de todos usuários, badges de role e status, botões para reset de senha e exclusão com proteção para admin não excluir própria conta"
+
+  - task: "Modal de Reset de Senha"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/AdminPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Modal implementado com input para nova senha, validação de mínimo 4 caracteres e chamada para API backend"
+
+  - task: "Modal de Confirmação de Exclusão"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/AdminPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Modal de confirmação implementado com aviso de ação irreversível e chamada para API de exclusão"
+
+## metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+## test_plan:
+  current_focus:
+    - "Nova aba 'Usuários Cadastrados' no AdminPanel"
+    - "Modal de Reset de Senha"
+    - "Modal de Confirmação de Exclusão"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication:
+    - agent: "main"
+      message: "Implementada funcionalidade completa de gerenciamento de usuários no painel admin. Backend já estava pronto, adicionei nova aba no frontend com listagem de usuários, badges de identificação (admin/usuário, status), botões para reset de senha e exclusão. Implementei modais para ambas ações com validações adequadas. Admin não pode excluir própria conta. Pronto para testes."
