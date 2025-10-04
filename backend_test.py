@@ -389,6 +389,136 @@ class BackendTester:
             self.log_test("Password Reset Bug Investigation", False, f"Test failed with exception: {str(e)}")
             return False
 
+    def test_existing_user_password_reset(self):
+        """
+        Test password reset with an existing user to see if there's a different behavior
+        """
+        print("\n" + "=" * 80)
+        print("🔍 EXISTING USER PASSWORD RESET TEST")
+        print("=" * 80)
+        print("Testing password reset with existing user 'operador'")
+        print()
+        
+        try:
+            # Get existing user info
+            users_response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if users_response.status_code != 200:
+                self.log_test("Existing User Test - Get Users", False, 
+                            f"Failed to get users: {users_response.status_code}")
+                return False
+            
+            users = users_response.json()
+            test_user = next((u for u in users if u.get("username") == "operador"), None)
+            
+            if not test_user:
+                self.log_test("Existing User Test - Find User", False, 
+                            "Could not find 'operador' user")
+                return False
+            
+            user_id = test_user["id"]
+            username = test_user["username"]
+            
+            # Try to login with a known password (this might fail, which is expected)
+            original_password = "operador123"  # Common password
+            new_password = "resetpass789"
+            
+            print(f"Testing with user: {username} (ID: {user_id})")
+            
+            # Test original login (might fail if we don't know the password)
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": original_password},
+                timeout=10
+            )
+            
+            original_login_works = login_response.status_code == 200
+            
+            if original_login_works:
+                self.log_test("Existing User Test - Original Login", True, 
+                            f"✅ Original password works for {username}")
+            else:
+                self.log_test("Existing User Test - Original Login", True, 
+                            f"ℹ️ Original password test failed (expected): {login_response.status_code}")
+                # Try a different common password
+                alt_passwords = ["123456", "operador", "admin123", "password"]
+                for alt_pass in alt_passwords:
+                    alt_response = requests.post(
+                        f"{self.base_url}/login",
+                        json={"username": username, "password": alt_pass},
+                        timeout=10
+                    )
+                    if alt_response.status_code == 200:
+                        original_password = alt_pass
+                        original_login_works = True
+                        self.log_test("Existing User Test - Found Password", True, 
+                                    f"✅ Found working password for {username}: {alt_pass}")
+                        break
+            
+            # Reset password via admin
+            reset_response = requests.put(
+                f"{self.base_url}/admin/reset-password/{user_id}",
+                headers=self.get_auth_headers(),
+                json={"new_password": new_password},
+                timeout=10
+            )
+            
+            if reset_response.status_code != 200:
+                self.log_test("Existing User Test - Admin Reset", False, 
+                            f"Password reset failed: {reset_response.status_code}")
+                return False
+            
+            self.log_test("Existing User Test - Admin Reset", True, 
+                        f"✅ Admin successfully reset password for {username}")
+            
+            # Test new password
+            new_login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": new_password},
+                timeout=10
+            )
+            
+            new_password_works = new_login_response.status_code == 200
+            if new_password_works:
+                self.log_test("Existing User Test - New Password", True, 
+                            f"✅ New password works for {username}")
+            else:
+                self.log_test("Existing User Test - New Password", False, 
+                            f"❌ New password failed for {username}: {new_login_response.status_code}")
+            
+            # Test old password (if we found one that worked)
+            if original_login_works:
+                old_login_response = requests.post(
+                    f"{self.base_url}/login",
+                    json={"username": username, "password": original_password},
+                    timeout=10
+                )
+                
+                old_password_still_works = old_login_response.status_code == 200
+                
+                if old_password_still_works:
+                    self.log_test("Existing User Test - Old Password", False, 
+                                f"🚨 BUG: Old password still works for {username}!")
+                    print(f"🚨 BUG CONFIRMED with existing user {username}!")
+                    print(f"   Old password: {original_password}")
+                    print(f"   New password: {new_password}")
+                    print(f"   Both passwords work!")
+                    return False
+                else:
+                    self.log_test("Existing User Test - Old Password", True, 
+                                f"✅ Old password correctly rejected for {username}")
+            
+            print(f"\n✅ Existing user password reset test completed for {username}")
+            return True
+                
+        except Exception as e:
+            self.log_test("Existing User Password Reset Test", False, f"Test failed with exception: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all admin user management tests"""
         print("=" * 60)
