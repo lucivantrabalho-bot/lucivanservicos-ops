@@ -75,15 +75,23 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     console.log('[AuthContext] Starting login process...');
     console.log('[AuthContext] Username:', username);
-    console.log('[AuthContext] API URL:', `${API_BASE}/login`);
+    console.log('[AuthContext] Full API URL:', `${API_BASE}/login`);
+    console.log('[AuthContext] Backend URL from env:', process.env.REACT_APP_BACKEND_URL);
     
     try {
+      // First attempt with axios
+      console.log('[AuthContext] Attempting login with axios...');
       const response = await axios.post(`${API_BASE}/login`, {
         username,
         password
+      }, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
-      console.log('[AuthContext] Login response:', response.data);
+      console.log('[AuthContext] Axios login response:', response.data);
       
       const { access_token, user_id, username: userName, role } = response.data;
       
@@ -95,25 +103,69 @@ export function AuthProvider({ children }) {
       console.log('[AuthContext] Login successful, user set:', { id: user_id, username: userName, role });
       
       return { success: true };
-    } catch (error) {
-      console.error('[AuthContext] Login failed with error:', error);
-      console.error('[AuthContext] Error response:', error.response?.data);
-      console.error('[AuthContext] Error status:', error.response?.status);
-      console.error('[AuthContext] Full error object:', error);
+    } catch (axiosError) {
+      console.error('[AuthContext] Axios login failed:', axiosError);
+      console.error('[AuthContext] Axios error code:', axiosError.code);
+      console.error('[AuthContext] Axios error message:', axiosError.message);
       
+      // If axios fails with network error, try with fetch as fallback
+      if (axiosError.code === 'NETWORK_ERROR' || !axiosError.response) {
+        console.log('[AuthContext] Axios failed, trying with fetch as fallback...');
+        
+        try {
+          const fetchResponse = await fetch(`${API_BASE}/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+          });
+          
+          console.log('[AuthContext] Fetch response status:', fetchResponse.status);
+          
+          if (fetchResponse.ok) {
+            const data = await fetchResponse.json();
+            console.log('[AuthContext] Fetch login response:', data);
+            
+            const { access_token, user_id, username: userName, role } = data;
+            
+            localStorage.setItem('token', access_token);
+            setToken(access_token);
+            setUser({ id: user_id, username: userName, role });
+            setIsAdmin(role === 'ADMIN');
+            
+            console.log('[AuthContext] Fetch login successful, user set:', { id: user_id, username: userName, role });
+            
+            return { success: true };
+          } else {
+            const errorData = await fetchResponse.json();
+            console.error('[AuthContext] Fetch login failed with status:', fetchResponse.status, errorData);
+            return { 
+              success: false, 
+              error: errorData.detail || 'Usuário ou senha incorretos.' 
+            };
+          }
+        } catch (fetchError) {
+          console.error('[AuthContext] Both axios and fetch failed:', fetchError);
+          return { 
+            success: false, 
+            error: 'Erro de conexão. Não foi possível conectar ao servidor.' 
+          };
+        }
+      }
+      
+      // Handle other axios errors
       let errorMessage = 'Falha no login. Verifique suas credenciais.';
       
-      if (error.response?.status === 401) {
+      if (axiosError.response?.status === 401) {
         errorMessage = 'Usuário ou senha incorretos.';
-      } else if (error.response?.status === 403) {
+      } else if (axiosError.response?.status === 403) {
         errorMessage = 'Conta não aprovada pelo administrador.';
-      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
       }
       
       return { 
         success: false, 
-        error: error.response?.data?.detail || errorMessage
+        error: axiosError.response?.data?.detail || errorMessage
       };
     }
   };
