@@ -1063,7 +1063,7 @@ async def _export_to_excel_advanced(pendencias, export_config: ExportFormat, fil
             try:
                 if len(str(cell.value)) > max_length:
                     max_length = len(str(cell.value))
-            except:
+            except (TypeError, AttributeError):
                 pass
         adjusted_width = min(max_length + 2, 30)
         ws.column_dimensions[column_letter].width = adjusted_width
