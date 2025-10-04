@@ -21,10 +21,19 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 export default function LocationsMap() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
-  const [filteredLocations, setFilteredLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  
+  // Observation modal states
+  const [observationModal, setObservationModal] = useState({
+    isOpen: false,
+    location: null,
+    observations: []
+  });
+  const [newObservation, setNewObservation] = useState('');
 
   useEffect(() => {
     loadLocations();
