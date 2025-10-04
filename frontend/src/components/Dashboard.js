@@ -231,8 +231,8 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Gerenciador CN19</h1>
-                <p className="text-sm text-slate-600">Bem-vindo, {user?.username}!</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Gerenciador CN19</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Bem-vindo, {user?.username}!</p>
               </div>
             </div>
             
