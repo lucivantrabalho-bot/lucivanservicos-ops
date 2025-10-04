@@ -108,7 +108,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     loading,
-    token
+    token,
+    isAdmin
   };
 
   return (
