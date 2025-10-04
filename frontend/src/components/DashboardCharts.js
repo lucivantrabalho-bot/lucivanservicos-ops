@@ -31,7 +31,7 @@ ChartJS.register(
   LineElement
 );
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+const API_BASE = process.env.REACT_APP_BACKEND_URL ? process.env.REACT_APP_BACKEND_URL + '/api' : '/api';
 
 export default function DashboardCharts() {
   const { user, isAdmin } = useAuth();
