@@ -237,6 +237,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-3">
+              <ThemeToggle />
               <Button
                 onClick={() => navigate('/create')}
                 data-testid="create-pendencia-btn"
