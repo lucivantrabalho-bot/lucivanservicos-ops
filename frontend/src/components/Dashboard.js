@@ -19,7 +19,9 @@ import {
   Eye,
   User,
   Calendar,
-  MapPin
+  MapPin,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import FinalizeModal from './FinalizeModal';
