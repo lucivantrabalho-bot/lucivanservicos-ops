@@ -1066,15 +1066,17 @@ async def _export_to_excel_advanced(pendencias, export_config: ExportFormat, fil
     # Auto-ajustar largura das colunas
     for column in ws.columns:
         max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except (TypeError, AttributeError):
-                pass
-        adjusted_width = min(max_length + 2, 30)
-        ws.column_dimensions[column_letter].width = adjusted_width
+        # Skip merged cells by checking if the first cell has column_letter attribute
+        if hasattr(column[0], 'column_letter'):
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if hasattr(cell, 'value') and len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except (TypeError, AttributeError):
+                    pass
+            adjusted_width = min(max_length + 2, 30)
+            ws.column_dimensions[column_letter].width = adjusted_width
     
     # Salvar arquivo
     filename = f"relatorio_pendencias_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
