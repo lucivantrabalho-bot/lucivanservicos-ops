@@ -5,6 +5,11 @@ const AuthContext = createContext();
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
+// Debug logging
+console.log('[AuthContext] Environment variables:');
+console.log('REACT_APP_BACKEND_URL:', process.env.REACT_APP_BACKEND_URL);
+console.log('API_BASE:', API_BASE);
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
