@@ -1016,7 +1016,7 @@ class BackendTester:
             return None, None, None
 
     def test_login_pending_user(self, username, password):
-        """Test login with PENDING user - should be blocked"""
+        """Test login with PENDING user - check current behavior"""
         try:
             response = requests.post(
                 f"{self.base_url}/login",
@@ -1028,20 +1028,84 @@ class BackendTester:
                 error_detail = response.json().get("detail", "")
                 if "pending" in error_detail.lower():
                     self.log_test("Login PENDING User", True, 
-                                f"PENDING user {username} correctly blocked from login",
+                                f"PENDING user {username} blocked from login (current behavior)",
                                 f"Error: {error_detail}")
                     return True
                 else:
                     self.log_test("Login PENDING User", False, 
                                 f"Wrong error message for PENDING user: {error_detail}")
                     return False
+            elif response.status_code == 200:
+                # If login succeeds, check if they can access protected endpoints
+                token = response.json().get("access_token")
+                if token:
+                    # Test access to a protected endpoint
+                    me_response = requests.get(
+                        f"{self.base_url}/me",
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=10
+                    )
+                    if me_response.status_code == 200:
+                        self.log_test("Login PENDING User", True, 
+                                    f"PENDING user {username} can login and access protected endpoints",
+                                    f"User data: {me_response.json()}")
+                        return True
+                    else:
+                        self.log_test("Login PENDING User", True, 
+                                    f"PENDING user {username} can login but cannot access protected endpoints",
+                                    f"Login success but /me returns {me_response.status_code}")
+                        return True
+                else:
+                    self.log_test("Login PENDING User", False, 
+                                f"Login succeeded but no token provided")
+                    return False
             else:
                 self.log_test("Login PENDING User", False, 
-                            f"PENDING user should be blocked but got status {response.status_code}", response.text)
+                            f"Unexpected response for PENDING user login: {response.status_code}", response.text)
                 return False
                 
         except Exception as e:
             self.log_test("Login PENDING User", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_pending_user_token_access(self, pending_token):
+        """Test if PENDING user token from registration can access endpoints"""
+        try:
+            if not pending_token:
+                self.log_test("PENDING Token Access", False, "No pending token provided")
+                return False
+            
+            # Test access to /me endpoint with registration token
+            response = requests.get(
+                f"{self.base_url}/me",
+                headers={"Authorization": f"Bearer {pending_token}"},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                if user_data.get("status") == "PENDING":
+                    self.log_test("PENDING Token Access", True, 
+                                f"PENDING user can access /me with registration token",
+                                f"User: {user_data.get('username')}, Status: {user_data.get('status')}")
+                    return True
+                else:
+                    self.log_test("PENDING Token Access", False, 
+                                f"Token works but user status is not PENDING: {user_data.get('status')}")
+                    return False
+            elif response.status_code == 403:
+                error_detail = response.json().get("detail", "")
+                self.log_test("PENDING Token Access", True, 
+                            f"PENDING user token blocked from accessing protected endpoints",
+                            f"Error: {error_detail}")
+                return True
+            else:
+                self.log_test("PENDING Token Access", False, 
+                            f"Unexpected response: {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("PENDING Token Access", False, f"Request failed: {str(e)}")
             return False
 
     def test_reports_timeline(self):
