@@ -417,6 +417,9 @@ async def approve_user(user_id: str, approval: UserApproval, admin_user: User = 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    if approval.status not in ["APPROVED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Status must be APPROVED or REJECTED")
+    
     update_data = {
         "status": approval.status,
         "approved_by": admin_user.username,
