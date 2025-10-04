@@ -531,6 +531,87 @@ export default function AdminPanel() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Reset de Senha */}
+      {resetPasswordModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Resetar Senha - {resetPasswordModal.user?.username}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Nova Senha
+                </label>
+                <input
+                  type="password"
+                  id="new-password"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Digite a nova senha (min. 4 caracteres)"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setResetPasswordModal({ isOpen: false, user: null })}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    const newPassword = document.getElementById('new-password').value;
+                    if (newPassword && newPassword.length >= 4) {
+                      handleResetPassword(resetPasswordModal.user.id, newPassword);
+                    } else {
+                      setError('A senha deve ter pelo menos 4 caracteres');
+                      setTimeout(() => setError(''), 3000);
+                    }
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Resetar Senha
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deleteUserModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
+              <h3 className="text-lg font-semibold text-slate-900">
+                Confirmar Exclusão
+              </h3>
+            </div>
+            
+            <p className="text-slate-600 mb-6">
+              Tem certeza que deseja excluir o usuário <strong>{deleteUserModal.user?.username}</strong>? 
+              Esta ação não pode ser desfeita.
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteUserModal({ isOpen: false, user: null })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => handleDeleteUser(deleteUserModal.user.id)}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Excluir Usuário
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
