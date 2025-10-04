@@ -1405,15 +1405,15 @@ class BackendTester:
             return False
 
     def run_all_tests(self):
-        """Run all new feature tests"""
+        """Run all new feature tests including advanced reporting endpoints"""
         print("=" * 80)
-        print("BACKEND API TESTING - NEW FEATURES")
+        print("BACKEND API TESTING - ADVANCED REPORTING ENDPOINTS")
         print("=" * 80)
         print(f"Testing against: {self.base_url}")
-        print("Testing newly implemented features:")
-        print("1. Monthly Statistics (with validation filter)")
-        print("2. Form Configuration Management")
-        print("3. User Profile Management")
+        print("Testing newly implemented advanced reporting features:")
+        print("1. Dashboard Statistics Advanced - POST /api/reports/dashboard-stats")
+        print("2. Export Advanced - POST /api/reports/export-advanced")
+        print("3. Performance Metrics - GET /api/reports/performance-metrics")
         print()
         
         # Step 1: Login as admin
@@ -1423,30 +1423,31 @@ class BackendTester:
         
         print()
         
-        # Test 1: Monthly Statistics
-        print("🔍 Testing Monthly Statistics...")
-        self.test_monthly_stats()
+        # Test 1: Dashboard Statistics Advanced
+        print("🔍 Testing Dashboard Statistics Advanced...")
+        self.test_dashboard_stats_basic()
+        print()
+        self.test_dashboard_stats_with_filters()
+        print()
+        self.test_dashboard_stats_user_permissions()
         print()
         
-        # Test 2: Form Configuration
-        print("🔍 Testing Form Configuration...")
-        original_config = self.test_get_form_config()
+        # Test 2: Export Advanced
+        print("🔍 Testing Export Advanced...")
+        self.test_export_advanced_excel()
         print()
-        self.test_update_form_config()
+        self.test_export_advanced_with_filters()
         print()
-        
-        # Test 3: User Profile - Password Change
-        print("🔍 Testing User Password Change...")
-        self.test_user_change_password_valid()
-        print()
-        self.test_user_change_password_invalid_current()
-        print()
-        self.test_user_change_password_too_short()
+        self.test_export_advanced_user_permissions()
         print()
         
-        # Test 4: User Individual Statistics
-        print("🔍 Testing User Individual Statistics...")
-        self.test_user_individual_stats()
+        # Test 3: Performance Metrics
+        print("🔍 Testing Performance Metrics...")
+        self.test_performance_metrics_30_days()
+        print()
+        self.test_performance_metrics_7_days()
+        print()
+        self.test_performance_metrics_admin_only()
         print()
         
         print("=" * 80)
