@@ -427,6 +427,56 @@ async def get_pending_users(admin_user: User = Depends(get_admin_user)):
     users = await db.users.find({"status": "PENDING"}).to_list(1000)
     return [{"id": user["id"], "username": user["username"], "created_at": user["created_at"]} for user in users]
 
+@api_router.get("/admin/all-users")
+async def get_all_users(admin_user: User = Depends(get_admin_user)):
+    users = await db.users.find().to_list(1000)
+    return [{
+        "id": user["id"], 
+        "username": user["username"], 
+        "role": user.get("role", "USER"),
+        "status": user.get("status", "APPROVED"),
+        "created_at": user["created_at"],
+        "approved_by": user.get("approved_by"),
+        "approved_at": user.get("approved_at")
+    } for user in users]
+
+@api_router.delete("/admin/delete-user/{user_id}")
+async def delete_user(user_id: str, admin_user: User = Depends(get_admin_user)):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Não permitir que admin exclua a si mesmo
+    if user["username"] == admin_user.username:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    # Excluir usuário
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}
+
+@api_router.put("/admin/reset-password/{user_id}")
+async def reset_password(user_id: str, password_reset: PasswordReset, admin_user: User = Depends(get_admin_user)):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Validar nova senha
+    if len(password_reset.new_password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters")
+    
+    # Atualizar senha
+    hashed_password = get_password_hash(password_reset.new_password)
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"hashed_password": hashed_password}}
+    )
+    
+    return {"message": "Password reset successfully"}
+
 @api_router.put("/admin/approve-user/{user_id}")
 async def approve_user(user_id: str, approval: UserApproval, admin_user: User = Depends(get_admin_user)):
     user = await db.users.find_one({"id": user_id})
