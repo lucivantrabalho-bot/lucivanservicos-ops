@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function DashboardCharts() {
+  const navigate = useNavigate();
   const [timelineData, setTimelineData] = useState([]);
   const [distributionData, setDistributionData] = useState({ by_type: [], by_site: [], by_status: [] });
   const [performanceData, setPerformanceData] = useState({ top_creators: [], top_finalizers: [] });
