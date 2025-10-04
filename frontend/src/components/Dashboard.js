@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import FinalizeModal from './FinalizeModal';
 import EditModal from './EditModal';
 import DeleteModal from './DeleteModal';
+import ThemeToggle from './ThemeToggle';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
