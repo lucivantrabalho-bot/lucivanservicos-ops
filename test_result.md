@@ -116,6 +116,9 @@
         - working: true
           agent: "main"
           comment: "Endpoint já estava implementado anteriormente no backend"
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves all users (6 users found including admin). Returns proper user data with id, username, role, status, created_at, approved_by, approved_at fields as expected."
 
   - task: "Endpoint delete user - /admin/delete-user/{user_id}"
     implemented: true
@@ -128,6 +131,9 @@
         - working: true
           agent: "main"
           comment: "Endpoint já estava implementado anteriormente no backend, inclui proteção para admin não excluir própria conta"
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully prevents admin from deleting own account (returns 400 error as expected). Successfully deletes other users when valid user_id provided. Protection mechanism working correctly."
 
   - task: "Endpoint reset password - /admin/reset-password/{user_id}"
     implemented: true
@@ -140,6 +146,9 @@
         - working: true
           agent: "main"
           comment: "Endpoint já estava implementado anteriormente no backend com validação mínima de 4 caracteres"
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully resets password with valid password (≥4 characters). Correctly rejects passwords with <4 characters (returns 400 error). Validation working as expected."
 
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
