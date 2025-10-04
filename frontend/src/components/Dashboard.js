@@ -21,7 +21,8 @@ import {
   Calendar,
   MapPin,
   Edit3,
-  Trash2
+  Trash2,
+  BarChart3
 } from 'lucide-react';
 import { ThemeToggle } from './ui/theme-toggle';
 import { Alert, AlertDescription } from './ui/alert';
