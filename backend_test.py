@@ -1446,6 +1446,8 @@ class BackendTester:
         print("🔍 Testing Admin Delete Pendencia...")
         self.test_admin_delete_pendencia()
         print()
+        self.test_admin_delete_finished_pendencia()
+        print()
         
         # Test 4: Authentication Requirements
         print("🔍 Testing Authentication Requirements...")
