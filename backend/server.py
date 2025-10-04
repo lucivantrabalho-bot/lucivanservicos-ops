@@ -888,7 +888,8 @@ async def get_dashboard_stats(filters: ReportFilter, current_user: User = Depend
     data = result[0] if result else {}
     
     # Processar resultados
-    total_pendencias = data.get("total", [{}])[0].get("count", 0)
+    total_list = data.get("total", [])
+    total_pendencias = total_list[0].get("count", 0) if total_list else 0
     
     status_counts = {item["_id"]: item["count"] for item in data.get("por_status", [])}
     validation_counts = {item["_id"]: item["count"] for item in data.get("por_validation_status", [])}
