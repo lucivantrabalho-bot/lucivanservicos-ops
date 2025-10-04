@@ -73,7 +73,7 @@ class Pendencia(BaseModel):
     tipo: str  # "Energia" or "Arcon"
     subtipo: str  # Específico baseado no tipo
     observacoes: str
-    foto_base64: str  # Obrigatória
+    foto_base64: Optional[str] = None  # Opcional para compatibilidade com pendências legadas
     status: str = "Pendente"  # "Pendente", "Finalizado", "Validado", "Rejeitado"
     usuario_criacao: str
     usuario_finalizacao: Optional[str] = None
