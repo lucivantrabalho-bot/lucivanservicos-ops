@@ -56,11 +56,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (username, password) => {
+    console.log('[AuthContext] Starting login process...');
+    console.log('[AuthContext] Username:', username);
+    console.log('[AuthContext] API URL:', `${API_BASE}/login`);
+    
     try {
       const response = await axios.post(`${API_BASE}/login`, {
         username,
         password
       });
+      
+      console.log('[AuthContext] Login response:', response.data);
       
       const { access_token, user_id, username: userName, role } = response.data;
       
@@ -69,12 +75,28 @@ export function AuthProvider({ children }) {
       setUser({ id: user_id, username: userName, role });
       setIsAdmin(role === 'ADMIN');
       
+      console.log('[AuthContext] Login successful, user set:', { id: user_id, username: userName, role });
+      
       return { success: true };
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('[AuthContext] Login failed with error:', error);
+      console.error('[AuthContext] Error response:', error.response?.data);
+      console.error('[AuthContext] Error status:', error.response?.status);
+      console.error('[AuthContext] Full error object:', error);
+      
+      let errorMessage = 'Falha no login. Verifique suas credenciais.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Usuário ou senha incorretos.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Conta não aprovada pelo administrador.';
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      }
+      
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Login failed' 
+        error: error.response?.data?.detail || errorMessage
       };
     }
   };
