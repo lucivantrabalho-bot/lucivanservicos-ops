@@ -51,6 +51,40 @@ export default function DashboardCharts() {
     }
   };
 
+  const exportToExcel = () => {
+    try {
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+
+      // Timeline data
+      if (timelineData.length > 0) {
+        const timelineWS = XLSX.utils.json_to_sheet(timelineData);
+        XLSX.utils.book_append_sheet(wb, timelineWS, 'Linha do Tempo');
+      }
+
+      // Distribution data
+      const distributionWS = XLSX.utils.aoa_to_sheet([
+        ['Tipo de Distribuição', 'Item', 'Quantidade'],
+        ...distributionData.by_type.map(item => ['Por Tipo', item.type, item.count]),
+        ...distributionData.by_site.map(item => ['Por Site', item.site, item.count]),
+        ...distributionData.by_status.map(item => ['Por Status', item.status, item.count])
+      ]);
+      XLSX.utils.book_append_sheet(wb, distributionWS, 'Distribuição');
+
+      // Performance data
+      if (performanceData.top_creators.length > 0) {
+        const performanceWS = XLSX.utils.json_to_sheet(performanceData.top_creators);
+        XLSX.utils.book_append_sheet(wb, performanceWS, 'Performance');
+      }
+
+      // Save file
+      const today = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `relatorio_gerenciador_cn19_${today}.xlsx`);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+    }
+  };
+
   // Prepare chart data
   const prepareTimelineChartData = () => {
     const labels = timelineData.map(item => item.period);
