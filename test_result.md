@@ -186,15 +186,18 @@
 
   - task: "Modal de Confirmação de Exclusão"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/components/AdminPanel.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Modal de confirmação implementado com aviso de ação irreversível e chamada para API de exclusão"
+        - working: true
+          agent: "main"
+          comment: "TESTADO: Interface funcionando corretamente. Modal de exclusão visível com botões apropriados. Aviso de ação irreversível claro."
 
 ## metadata:
   created_by: "main_agent"
