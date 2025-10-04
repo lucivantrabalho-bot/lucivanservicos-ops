@@ -552,7 +552,7 @@ async def validate_pendencia(
     return {"message": "Pendência validada com sucesso"}
 
 @api_router.delete("/admin/delete-pendencia/{pendencia_id}")
-async def delete_pendencia(pendencia_id: str, admin_user: User = Depends(get_admin_user)):
+async def admin_delete_pendencia(pendencia_id: str, admin_user: User = Depends(get_admin_user)):
     pendencia = await db.pendencias.find_one({"id": pendencia_id})
     if not pendencia:
         raise HTTPException(status_code=404, detail="Pendência não encontrada")
