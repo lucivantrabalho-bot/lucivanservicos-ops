@@ -213,6 +213,18 @@ async def login(user_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    if user["status"] == "PENDING":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending admin approval"
+        )
+    
+    if user["status"] == "REJECTED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account access denied"
+        )
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user["username"]}, expires_delta=access_token_expires
@@ -222,7 +234,8 @@ async def login(user_data: UserLogin):
         access_token=access_token,
         token_type="bearer",
         user_id=user["id"],
-        username=user["username"]
+        username=user["username"],
+        role=user.get("role", "USER")
     )
 
 @api_router.get("/me", response_model=User)
