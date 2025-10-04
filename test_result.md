@@ -272,6 +272,57 @@
         - working: true
           agent: "testing"
           comment: "TESTED: Successfully allows admin to delete any pendency in any status (including finished pendencies). Proper authorization checks in place. Returns success message. API working correctly."
+        - working: true
+          agent: "testing"
+          comment: "RE-TESTED: Admin delete pendency functionality confirmed working. Successfully deleted both pending and finished pendencies. Authorization working correctly - only admin can delete any pendency in any status."
+
+  - task: "KML Upload Endpoint - POST /api/admin/upload-kml"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully uploads valid KML files and parses locations. Uploaded test KML with 2 locations (Brasília and São Paulo). Correctly rejects invalid KML files and non-KML file extensions. Returns proper response with kml_id, total_locations, and location preview. Admin authorization working correctly."
+
+  - task: "KML Locations Endpoint - GET /api/kml/locations"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves KML locations for both admin and regular users. Returns array of locations with proper structure including name, description, latitude, longitude, source_file, and uploaded_by fields. Authentication required but accessible to all authenticated users."
+
+  - task: "KML Delete Endpoint - DELETE /api/admin/kml/{kml_id}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully deletes KML data by ID. Admin-only endpoint with proper authorization checks. Returns success message when deletion is successful. Handles non-existent IDs appropriately."
+
+  - task: "KML Authentication and Authorization"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: KML endpoints have proper authentication and authorization. Admin endpoints (upload, delete) correctly restricted to administrators only. Regular users blocked from admin endpoints (403 Forbidden). Location viewing endpoint accessible to all authenticated users. Unauthenticated access properly blocked (401/403)."
 
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
