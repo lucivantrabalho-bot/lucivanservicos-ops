@@ -152,9 +152,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise credentials_exception
     
     user = await db.users.find_one({"username": username})
-    if user is None:
-        raise credentials_exception
+    if user is None or user["status"] != "APPROVED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account not approved"
+        )
     return User(**user)
+
+async def get_admin_user(current_user: User = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+# Função para converter UTC para horário de Brasília
+def to_brasilia_time(utc_dt: datetime) -> datetime:
+    from zoneinfo import ZoneInfo
+    return utc_dt.replace(tzinfo=ZoneInfo('UTC')).astimezone(ZoneInfo('America/Sao_Paulo'))
 
 
 # Routes
