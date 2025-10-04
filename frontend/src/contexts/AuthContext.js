@@ -125,7 +125,8 @@ export function AuthProvider({ children }) {
     logout,
     loading,
     token,
-    isAdmin
+    isAdmin,
+    checkUserStatus
   };
 
   return (
