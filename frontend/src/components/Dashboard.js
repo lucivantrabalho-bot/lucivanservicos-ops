@@ -245,6 +245,17 @@ export default function Dashboard() {
                 Nova Pendência
               </Button>
               
+              {isAdmin && (
+                <Button
+                  onClick={() => navigate('/admin')}
+                  data-testid="admin-panel-btn"
+                  className="btn-hover bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              )}
+              
               <Button
                 onClick={logout}
                 variant="outline"
