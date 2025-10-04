@@ -538,15 +538,39 @@ export default function Dashboard() {
                       )}
                       
                       {pendencia.status === 'Pendente' && (
-                        <Button
-                          onClick={() => openFinalizeModal(pendencia)}
-                          data-testid="finalize-pendencia-btn"
-                          className="btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
-                          size="sm"
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-1" />
-                          Finalizar
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => openEditModal(pendencia)}
+                            data-testid="edit-pendencia-btn"
+                            variant="outline"
+                            size="sm"
+                            className="btn-hover border-blue-200 text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit3 className="w-4 h-4 mr-1" />
+                            Editar
+                          </Button>
+                          
+                          <Button
+                            onClick={() => openDeleteModal(pendencia)}
+                            data-testid="delete-pendencia-btn"
+                            variant="outline"
+                            size="sm"
+                            className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Excluir
+                          </Button>
+                          
+                          <Button
+                            onClick={() => openFinalizeModal(pendencia)}
+                            data-testid="finalize-pendencia-btn"
+                            className="btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                            size="sm"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            Finalizar
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
