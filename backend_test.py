@@ -980,10 +980,50 @@ class BackendTester:
             self.log_test("User Individual Stats", False, f"Request failed: {str(e)}")
             return False
 
-    def test_dashboard_stats_basic(self):
-        """Test POST /api/reports/dashboard-stats with basic filters"""
+    def test_dashboard_stats_empty_filters(self):
+        """Test POST /api/reports/dashboard-stats with empty filters (CORRECTED)"""
         try:
-            # Test with minimal filters
+            # Test with empty filters - should work after IndexError fix
+            filters = {}
+            
+            response = requests.post(
+                f"{self.base_url}/reports/dashboard-stats",
+                headers=self.get_auth_headers(),
+                json=filters,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                stats = response.json()
+                required_fields = [
+                    "total_pendencias", "pendencias_abertas", "pendencias_finalizadas",
+                    "pendencias_validadas", "pendencias_rejeitadas", "pendencias_por_tipo",
+                    "pendencias_por_site", "pendencias_por_mes", "usuarios_ativos", "taxa_finalizacao"
+                ]
+                
+                if all(field in stats for field in required_fields):
+                    self.log_test("Dashboard Stats (Empty Filters - CORRECTED)", True, 
+                                f"✅ IndexError FIXED - Empty filters work correctly", 
+                                f"Total: {stats.get('total_pendencias')}, Taxa finalização: {stats.get('taxa_finalizacao')}%")
+                    return True
+                else:
+                    missing_fields = [field for field in required_fields if field not in stats]
+                    self.log_test("Dashboard Stats (Empty Filters - CORRECTED)", False, 
+                                f"Missing required fields: {missing_fields}", stats)
+                    return False
+            else:
+                self.log_test("Dashboard Stats (Empty Filters - CORRECTED)", False, 
+                            f"❌ IndexError NOT FIXED - Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Dashboard Stats (Empty Filters - CORRECTED)", False, f"❌ IndexError NOT FIXED - Request failed: {str(e)}")
+            return False
+
+    def test_dashboard_stats_with_data_filters(self):
+        """Test POST /api/reports/dashboard-stats with data filters (CORRECTED)"""
+        try:
+            # Test with date filters
             filters = {
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31"
@@ -1005,22 +1045,22 @@ class BackendTester:
                 ]
                 
                 if all(field in stats for field in required_fields):
-                    self.log_test("Dashboard Stats (Basic)", True, 
-                                f"Retrieved dashboard statistics", 
+                    self.log_test("Dashboard Stats (With Data Filters - CORRECTED)", True, 
+                                f"✅ Works with date filters after IndexError fix", 
                                 f"Total: {stats.get('total_pendencias')}, Taxa finalização: {stats.get('taxa_finalizacao')}%")
                     return True
                 else:
                     missing_fields = [field for field in required_fields if field not in stats]
-                    self.log_test("Dashboard Stats (Basic)", False, 
+                    self.log_test("Dashboard Stats (With Data Filters - CORRECTED)", False, 
                                 f"Missing required fields: {missing_fields}", stats)
                     return False
             else:
-                self.log_test("Dashboard Stats (Basic)", False, 
+                self.log_test("Dashboard Stats (With Data Filters - CORRECTED)", False, 
                             f"Request failed with status {response.status_code}", response.text)
                 return False
                 
         except Exception as e:
-            self.log_test("Dashboard Stats (Basic)", False, f"Request failed: {str(e)}")
+            self.log_test("Dashboard Stats (With Data Filters - CORRECTED)", False, f"Request failed: {str(e)}")
             return False
 
     def test_dashboard_stats_with_filters(self):
