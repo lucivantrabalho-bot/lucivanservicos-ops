@@ -268,6 +268,15 @@ export default function Dashboard() {
                 Perfil
               </Button>
               
+              <Button
+                onClick={() => navigate('/locations')}
+                data-testid="locations-btn"
+                className="btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Localizações
+              </Button>
+
               {isAdmin && (
                 <Button
                   onClick={() => navigate('/reports')}
