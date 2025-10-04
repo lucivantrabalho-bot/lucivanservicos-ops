@@ -1363,8 +1363,8 @@ class BackendTester:
             self.log_test("Export Advanced (User Permissions)", False, f"Request failed: {str(e)}")
             return False
 
-    def test_performance_metrics_30_days(self):
-        """Test GET /api/reports/performance-metrics with default 30 days"""
+    def test_performance_metrics_30_days_corrected(self):
+        """Test GET /api/reports/performance-metrics with default 30 days (CORRECTED IndexError)"""
         try:
             response = requests.get(
                 f"{self.base_url}/reports/performance-metrics",
@@ -1381,26 +1381,26 @@ class BackendTester:
                 ]
                 
                 if all(field in metrics for field in required_fields):
-                    self.log_test("Performance Metrics (30 days)", True, 
-                                f"Retrieved performance metrics for {metrics.get('periodo_dias')} days", 
+                    self.log_test("Performance Metrics (30 days - CORRECTED)", True, 
+                                f"✅ IndexError FIXED - Retrieved performance metrics for {metrics.get('periodo_dias')} days", 
                                 f"Tempo médio: {metrics.get('tempo_medio_finalizacao_horas')}h, Usuários ativos: {len(metrics.get('usuarios_mais_ativos', []))}")
                     return True
                 else:
                     missing_fields = [field for field in required_fields if field not in metrics]
-                    self.log_test("Performance Metrics (30 days)", False, 
+                    self.log_test("Performance Metrics (30 days - CORRECTED)", False, 
                                 f"Missing required fields: {missing_fields}", metrics)
                     return False
             else:
-                self.log_test("Performance Metrics (30 days)", False, 
-                            f"Request failed with status {response.status_code}", response.text)
+                self.log_test("Performance Metrics (30 days - CORRECTED)", False, 
+                            f"❌ IndexError NOT FIXED - Request failed with status {response.status_code}", response.text)
                 return False
                 
         except Exception as e:
-            self.log_test("Performance Metrics (30 days)", False, f"Request failed: {str(e)}")
+            self.log_test("Performance Metrics (30 days - CORRECTED)", False, f"❌ IndexError NOT FIXED - Request failed: {str(e)}")
             return False
 
-    def test_performance_metrics_7_days(self):
-        """Test GET /api/reports/performance-metrics with 7 days parameter"""
+    def test_performance_metrics_7_days_corrected(self):
+        """Test GET /api/reports/performance-metrics with 7 days parameter (CORRECTED IndexError)"""
         try:
             response = requests.get(
                 f"{self.base_url}/reports/performance-metrics?days=7",
@@ -1411,21 +1411,21 @@ class BackendTester:
             if response.status_code == 200:
                 metrics = response.json()
                 if metrics.get("periodo_dias") == 7:
-                    self.log_test("Performance Metrics (7 days)", True, 
-                                f"Retrieved 7-day performance metrics", 
+                    self.log_test("Performance Metrics (7 days - CORRECTED)", True, 
+                                f"✅ IndexError FIXED - Retrieved 7-day performance metrics", 
                                 f"Tempo médio: {metrics.get('tempo_medio_finalizacao_horas')}h")
                     return True
                 else:
-                    self.log_test("Performance Metrics (7 days)", False, 
+                    self.log_test("Performance Metrics (7 days - CORRECTED)", False, 
                                 f"Expected 7 days but got {metrics.get('periodo_dias')}")
                     return False
             else:
-                self.log_test("Performance Metrics (7 days)", False, 
-                            f"Request failed with status {response.status_code}", response.text)
+                self.log_test("Performance Metrics (7 days - CORRECTED)", False, 
+                            f"❌ IndexError NOT FIXED - Request failed with status {response.status_code}", response.text)
                 return False
                 
         except Exception as e:
-            self.log_test("Performance Metrics (7 days)", False, f"Request failed: {str(e)}")
+            self.log_test("Performance Metrics (7 days - CORRECTED)", False, f"❌ IndexError NOT FIXED - Request failed: {str(e)}")
             return False
 
     def test_performance_metrics_admin_only(self):
