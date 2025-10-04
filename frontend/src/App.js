@@ -6,6 +6,7 @@ import './App.css';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import CreatePendencia from './components/CreatePendencia';
+import AdminPanel from './components/AdminPanel';
 
 // Auth context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
