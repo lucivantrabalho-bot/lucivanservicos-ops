@@ -61,7 +61,8 @@ export function AuthProvider({ children }) {
       
       localStorage.setItem('token', access_token);
       setToken(access_token);
-      setUser({ id: user_id, username: userName });
+      setUser({ id: user_id, username: userName, role });
+      setIsAdmin(role === 'ADMIN');
       
       return { success: true };
     } catch (error) {
@@ -84,7 +85,8 @@ export function AuthProvider({ children }) {
       
       localStorage.setItem('token', access_token);
       setToken(access_token);
-      setUser({ id: user_id, username: userName });
+      setUser({ id: user_id, username: userName, role });
+      setIsAdmin(role === 'ADMIN');
       
       return { success: true };
     } catch (error) {
