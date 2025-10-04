@@ -311,7 +311,7 @@ export default function CreatePendencia() {
               
               {/* Upload de Foto */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Foto (Opcional)</Label>
+                <Label className="text-sm font-medium text-slate-700">Foto *</Label>
                 
                 {!photo ? (
                   <div
