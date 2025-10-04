@@ -144,8 +144,8 @@ export default function AdminPanel() {
       await axios.put(`${API_BASE}/admin/reset-password/${userId}`, {
         new_password: newPassword
       });
-      setSuccess('Senha resetada com sucesso!');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess('Senha resetada com sucesso! O usuário deve usar a nova senha no próximo login.');
+      setTimeout(() => setSuccess(''), 5000);
       setResetPasswordModal({ isOpen: false, user: null });
     } catch (err) {
       setError(err.response?.data?.detail || 'Erro ao resetar senha');
