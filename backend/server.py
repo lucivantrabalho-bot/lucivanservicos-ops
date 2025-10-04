@@ -522,6 +522,52 @@ async def validate_pendencia(
     await db.pendencias.update_one({"id": pendencia_id}, {"$set": update_data})
     return {"message": "Pendência validada com sucesso"}
 
+# Endpoints para configuração do formulário
+@api_router.get("/admin/form-config")
+async def get_form_config(admin_user: User = Depends(get_admin_user)):
+    config = await db.form_config.find_one({"type": "main"})
+    if not config:
+        # Configuração padrão
+        default_config = {
+            "type": "main",
+            "energia_options": [
+                "Controladora", "QDCA", "QM", "Retificador", "Disjuntor", 
+                "Bateria", "Iluminação Pátio", "Sensor de Porta", 
+                "Sensor de Incêndio", "Iluminação Gabinete/Container", 
+                "Cabo de Alimentação"
+            ],
+            "arcon_options": [
+                "Trocador de Calor", "Sanrio", "Walmont", "Limpeza", 
+                "Contatora", "Compressor", "Gás", "Fusível", 
+                "Placa Queimada", "Transformador", "Relé Térmico", 
+                "Relé Falta de Fase", "Comando", "Alarme"
+            ]
+        }
+        await db.form_config.insert_one(default_config)
+        return {
+            "energia_options": default_config["energia_options"],
+            "arcon_options": default_config["arcon_options"]
+        }
+    
+    return {
+        "energia_options": config["energia_options"],
+        "arcon_options": config["arcon_options"]
+    }
+
+@api_router.put("/admin/form-config")
+async def update_form_config(config: FormConfigUpdate, admin_user: User = Depends(get_admin_user)):
+    await db.form_config.update_one(
+        {"type": "main"},
+        {"$set": {
+            "energia_options": config.energia_options,
+            "arcon_options": config.arcon_options,
+            "updated_by": admin_user.username,
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    return {"message": "Configuração do formulário atualizada com sucesso"}
+
 @api_router.get("/stats/monthly")
 async def get_monthly_stats(current_user: User = Depends(get_current_user)):
     from datetime import datetime, timezone
