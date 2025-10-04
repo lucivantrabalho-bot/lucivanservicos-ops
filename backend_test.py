@@ -1489,6 +1489,69 @@ class BackendTester:
             self.log_test("Performance Metrics (Admin Only)", False, f"Request failed: {str(e)}")
             return False
 
+    def run_corrected_endpoints_tests(self):
+        """Run tests for the 3 CORRECTED reporting endpoints"""
+        print("=" * 80)
+        print("TESTING 3 CORRECTED REPORTING ENDPOINTS")
+        print("=" * 80)
+        print(f"Testing against: {self.base_url}")
+        print("Testing CORRECTED endpoints after fixes:")
+        print("1. ✅ IndexError FIXED in dashboard stats")
+        print("2. ✅ ExportRequest model CREATED for export-advanced")
+        print("3. ✅ Frontend .env CREATED with REACT_APP_BACKEND_URL")
+        print("4. ✅ Services RESTARTED")
+        print("5. ✅ Login working (admin/admin123)")
+        print()
+        
+        # Step 1: Login as admin
+        if not self.login_admin():
+            print("❌ Cannot proceed without admin authentication")
+            return False
+        
+        print()
+        
+        # Test 1: Dashboard Statistics Advanced (CORRECTED)
+        print("🔍 Testing Dashboard Statistics Advanced (CORRECTED)...")
+        self.test_dashboard_stats_empty_filters()  # Test empty filters - should work after IndexError fix
+        self.test_dashboard_stats_with_data_filters()  # Test with data filters
+        
+        print()
+        
+        # Test 2: Export Advanced (CORRECTED)
+        print("🔍 Testing Export Advanced (CORRECTED)...")
+        self.test_export_advanced_new_structure()  # Test NEW ExportRequest structure
+        self.test_export_advanced_with_different_filters()  # Test with different filters
+        
+        print()
+        
+        # Test 3: Performance Metrics (CORRECTED)
+        print("🔍 Testing Performance Metrics (CORRECTED)...")
+        self.test_performance_metrics_30_days_corrected()  # Test ?days=30 after IndexError fix
+        self.test_performance_metrics_7_days_corrected()  # Test ?days=7 after IndexError fix
+        
+        print()
+        
+        # Summary
+        total_tests = len(self.test_results)
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        failed_tests = total_tests - passed_tests
+        
+        print("=" * 80)
+        print("CORRECTED ENDPOINTS TEST SUMMARY")
+        print("=" * 80)
+        print(f"Total Tests: {total_tests}")
+        print(f"✅ Passed: {passed_tests}")
+        print(f"❌ Failed: {failed_tests}")
+        print(f"Success Rate: {(passed_tests/total_tests*100):.1f}%")
+        
+        if failed_tests > 0:
+            print("\n❌ FAILED TESTS:")
+            for result in self.test_results:
+                if not result["success"]:
+                    print(f"   - {result['test']}: {result['message']}")
+        
+        print("\n" + "=" * 80)
+        return failed_tests == 0
     def run_all_tests(self):
         """Run all new feature tests including advanced reporting endpoints"""
         print("=" * 80)
