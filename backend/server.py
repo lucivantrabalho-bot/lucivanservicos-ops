@@ -89,6 +89,13 @@ class PendenciaUpdate(BaseModel):
     informacoes_fechamento: Optional[str] = None
     foto_fechamento_base64: Optional[str] = None
 
+class PendenciaEdit(BaseModel):
+    site: str
+    tipo: str
+    subtipo: str
+    observacoes: str
+    foto_base64: Optional[str] = None
+
 
 # Auth helpers
 def verify_password(plain_password, hashed_password):
