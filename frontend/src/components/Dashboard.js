@@ -33,7 +33,7 @@ import ThemeToggle from './ThemeToggle';
 import DashboardCharts from './DashboardCharts';
 import AdvancedFilters from './AdvancedFilters';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+const API_BASE = process.env.REACT_APP_BACKEND_URL ? process.env.REACT_APP_BACKEND_URL + '/api' : '/api';
 
 export default function Dashboard() {
   const { user, logout, isAdmin } = useAuth();
