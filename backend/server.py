@@ -214,16 +214,30 @@ async def login(user_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if user["status"] == "PENDING":
+    # Handle legacy users without status field
+    user_status = user.get("status", "APPROVED")  # Default to APPROVED for existing users
+    user_role = user.get("role", "ADMIN" if user["username"] == "admin" else "USER")  # Make admin user admin
+    
+    if user_status == "PENDING":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account pending admin approval"
         )
     
-    if user["status"] == "REJECTED":
+    if user_status == "REJECTED":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account access denied"
+        )
+    
+    # Update legacy users
+    if "status" not in user or "role" not in user:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "status": user_status,
+                "role": user_role
+            }}
         )
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -236,7 +250,7 @@ async def login(user_data: UserLogin):
         token_type="bearer",
         user_id=user["id"],
         username=user["username"],
-        role=user.get("role", "USER")
+        role=user_role
     )
 
 @api_router.get("/me", response_model=User)
