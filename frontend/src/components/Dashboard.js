@@ -44,8 +44,6 @@ export default function Dashboard() {
   const [pendencias, setPendencias] = useState([]);
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   
   // Modal state
   const [finalizeModal, setFinalizeModal] = useState({
