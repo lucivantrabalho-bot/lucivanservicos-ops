@@ -62,6 +62,13 @@ export default function Login() {
       const result = await register(registerData.username, registerData.password);
       if (!result.success) {
         setError(result.error);
+      } else {
+        // Redirect based on status
+        if (result.status === 'PENDING') {
+          navigate('/pending-approval');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       setError('Erro ao criar conta');
