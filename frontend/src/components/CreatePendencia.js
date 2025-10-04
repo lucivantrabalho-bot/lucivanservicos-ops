@@ -155,12 +155,17 @@ export default function CreatePendencia() {
         return;
       }
       
+      if (!photo) {
+        setError('A foto é obrigatória para criar uma pendência');
+        return;
+      }
+      
       const payload = {
         site: formData.site.trim(),
         tipo: formData.tipo,
         subtipo: formData.subtipo,
         observacoes: formData.observacoes.trim(),
-        foto_base64: photo || null
+        foto_base64: photo
       };
       
       await axios.post(`${API_BASE}/pendencias`, payload);
