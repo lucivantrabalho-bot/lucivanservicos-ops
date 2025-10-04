@@ -153,11 +153,31 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise credentials_exception
     
     user = await db.users.find_one({"username": username})
-    if user is None or user["status"] != "APPROVED":
+    if user is None:
+        raise credentials_exception
+    
+    # Handle legacy users
+    user_status = user.get("status", "APPROVED")
+    user_role = user.get("role", "ADMIN" if user["username"] == "admin" else "USER")
+    
+    if user_status != "APPROVED":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account not approved"
         )
+    
+    # Update legacy users
+    if "status" not in user or "role" not in user:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "status": user_status,
+                "role": user_role
+            }}
+        )
+        user["status"] = user_status
+        user["role"] = user_role
+    
     return User(**user)
 
 async def get_admin_user(current_user: User = Depends(get_current_user)):
