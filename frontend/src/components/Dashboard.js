@@ -441,7 +441,7 @@ export default function Dashboard() {
                       
                       {pendencia.status === 'Pendente' && (
                         <Button
-                          onClick={() => handleFinalizarPendencia(pendencia.id)}
+                          onClick={() => openFinalizeModal(pendencia)}
                           data-testid="finalize-pendencia-btn"
                           className="btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
                           size="sm"
