@@ -28,11 +28,22 @@ export default function AdminPanel() {
   const navigate = useNavigate();
   
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [allPendencias, setAllPendencias] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Modal states
+  const [resetPasswordModal, setResetPasswordModal] = useState({
+    isOpen: false,
+    user: null
+  });
+  const [deleteUserModal, setDeleteUserModal] = useState({
+    isOpen: false,
+    user: null
+  });
 
   // Redirect if not admin
   useEffect(() => {
