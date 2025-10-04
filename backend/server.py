@@ -614,6 +614,196 @@ async def change_user_password(password_change: PasswordChange, current_user: Us
     
     return {"message": "Password changed successfully"}
 
+@api_router.get("/reports/timeline")
+async def get_timeline_report(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    from datetime import datetime, timezone, timedelta
+    import calendar
+    
+    # Default to last 6 months if no dates provided
+    if not end_date:
+        end_date = datetime.now(timezone.utc)
+    else:
+        end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+    
+    if not start_date:
+        start_date = end_date - timedelta(days=180)  # 6 months
+    else:
+        start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    
+    # Group pendencies by month
+    pipeline = [
+        {
+            "$match": {
+                "created_at": {"$gte": start_date, "$lte": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "year": {"$year": "$created_at"},
+                    "month": {"$month": "$created_at"}
+                },
+                "total": {"$sum": 1},
+                "pending": {
+                    "$sum": {"$cond": [{"$eq": ["$status", "Pendente"]}, 1, 0]}
+                },
+                "finished": {
+                    "$sum": {"$cond": [{"$eq": ["$status", "Finalizado"]}, 1, 0]}
+                },
+                "approved": {
+                    "$sum": {"$cond": [{"$eq": ["$validation_status", "APPROVED"]}, 1, 0]}
+                }
+            }
+        },
+        {"$sort": {"_id.year": 1, "_id.month": 1}}
+    ]
+    
+    results = await db.pendencias.aggregate(pipeline).to_list(100)
+    
+    # Format results
+    timeline_data = []
+    for result in results:
+        month_name = calendar.month_name[result["_id"]["month"]]
+        timeline_data.append({
+            "period": f"{month_name} {result['_id']['year']}",
+            "year": result["_id"]["year"],
+            "month": result["_id"]["month"],
+            "total": result["total"],
+            "pending": result["pending"],
+            "finished": result["finished"],
+            "approved": result["approved"]
+        })
+    
+    return timeline_data
+
+@api_router.get("/reports/distribution")
+async def get_distribution_report(current_user: User = Depends(get_current_user)):
+    
+    # Distribution by type
+    type_pipeline = [
+        {
+            "$group": {
+                "_id": "$tipo",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    
+    # Distribution by site
+    site_pipeline = [
+        {
+            "$group": {
+                "_id": "$site",
+                "count": {"$sum": 1}
+            }
+        },
+        {"$sort": {"count": -1}},
+        {"$limit": 10}  # Top 10 sites
+    ]
+    
+    # Distribution by status
+    status_pipeline = [
+        {
+            "$group": {
+                "_id": "$status",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    
+    type_results = await db.pendencias.aggregate(type_pipeline).to_list(100)
+    site_results = await db.pendencias.aggregate(site_pipeline).to_list(100)
+    status_results = await db.pendencias.aggregate(status_pipeline).to_list(100)
+    
+    return {
+        "by_type": [{"type": r["_id"], "count": r["count"]} for r in type_results],
+        "by_site": [{"site": r["_id"], "count": r["count"]} for r in site_results],
+        "by_status": [{"status": r["_id"], "count": r["count"]} for r in status_results]
+    }
+
+@api_router.get("/reports/performance")
+async def get_performance_report(current_user: User = Depends(get_current_user)):
+    from datetime import datetime, timezone, timedelta
+    
+    # Last 30 days
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=30)
+    
+    # Top performers (creators)
+    creators_pipeline = [
+        {
+            "$match": {
+                "created_at": {"$gte": start_date, "$lte": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$usuario_criacao",
+                "created": {"$sum": 1},
+                "approved": {
+                    "$sum": {"$cond": [{"$eq": ["$validation_status", "APPROVED"]}, 1, 0]}
+                }
+            }
+        },
+        {"$sort": {"created": -1}},
+        {"$limit": 10}
+    ]
+    
+    # Top performers (finalizers)
+    finalizers_pipeline = [
+        {
+            "$match": {
+                "data_finalizacao": {"$gte": start_date, "$lte": end_date},
+                "status": "Finalizado"
+            }
+        },
+        {
+            "$group": {
+                "_id": "$usuario_finalizacao",
+                "finished": {"$sum": 1},
+                "approved": {
+                    "$sum": {"$cond": [{"$eq": ["$validation_status", "APPROVED"]}, 1, 0]}
+                }
+            }
+        },
+        {"$sort": {"finished": -1}},
+        {"$limit": 10}
+    ]
+    
+    creators_results = await db.pendencias.aggregate(creators_pipeline).to_list(100)
+    finalizers_results = await db.pendencias.aggregate(finalizers_pipeline).to_list(100)
+    
+    # Format results with approval rates
+    top_creators = []
+    for result in creators_results:
+        approval_rate = (result["approved"] / result["created"] * 100) if result["created"] > 0 else 0
+        top_creators.append({
+            "username": result["_id"],
+            "created": result["created"],
+            "approved": result["approved"],
+            "approval_rate": round(approval_rate, 1)
+        })
+    
+    top_finalizers = []
+    for result in finalizers_results:
+        approval_rate = (result["approved"] / result["finished"] * 100) if result["finished"] > 0 else 0
+        top_finalizers.append({
+            "username": result["_id"],
+            "finished": result["finished"],
+            "approved": result["approved"],
+            "approval_rate": round(approval_rate, 1)
+        })
+    
+    return {
+        "top_creators": top_creators,
+        "top_finalizers": top_finalizers,
+        "period": "Last 30 days"
+    }
+
 @api_router.get("/user/stats")
 async def get_user_stats(current_user: User = Depends(get_current_user)):
     from datetime import datetime, timezone
