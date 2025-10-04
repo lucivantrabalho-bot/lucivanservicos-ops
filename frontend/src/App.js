@@ -82,6 +82,12 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/pending-approval"
+        element={
+          <PendingApproval />
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
