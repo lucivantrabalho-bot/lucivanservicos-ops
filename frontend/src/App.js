@@ -24,7 +24,14 @@ function ProtectedRoute({ children }) {
     );
   }
   
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  
+  // Redirect pending users to approval screen
+  if (user.status === 'PENDING') {
+    return <Navigate to="/pending-approval" />;
+  }
+  
+  return children;
 }
 
 function PublicRoute({ children }) {
