@@ -146,14 +146,35 @@ export default function DashboardCharts() {
   }
 
   return (
-    <div className="space-y-6 fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Relatórios e Análises</h2>
-          <p className="text-slate-600 dark:text-slate-400">Visualize dados e métricas do sistema</p>
+      <div className="bg-white dark:bg-slate-800 shadow-sm border-b dark:border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center py-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="mr-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Relatórios e Análises</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Visualize dados e métricas do sistema</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 fade-in">
+        {/* Actions */}
+        <div className="flex items-center justify-end space-x-3">
           <Button onClick={loadReports} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
@@ -163,7 +184,6 @@ export default function DashboardCharts() {
             Exportar
           </Button>
         </div>
-      </div>
 
       <Tabs defaultValue="timeline" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
