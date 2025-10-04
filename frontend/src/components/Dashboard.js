@@ -408,16 +408,28 @@ export default function Dashboard() {
                         )}
                         
                         {pendencia.status === 'Finalizado' && pendencia.usuario_finalizacao && (
-                          <div className="flex items-center text-sm text-emerald-600">
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            <span className="font-medium">Finalizado por:</span>
-                            <span className="ml-1">{pendencia.usuario_finalizacao}</span>
-                            {pendencia.data_finalizacao && (
-                              <span className="ml-2 text-slate-500">
-                                em {new Date(pendencia.data_finalizacao).toLocaleDateString('pt-BR')}
-                              </span>
+                          <>
+                            <div className="flex items-center text-sm text-emerald-600">
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              <span className="font-medium">Finalizado por:</span>
+                              <span className="ml-1">{pendencia.usuario_finalizacao}</span>
+                              {pendencia.data_finalizacao && (
+                                <span className="ml-2 text-slate-500">
+                                  em {new Date(pendencia.data_finalizacao).toLocaleDateString('pt-BR')}
+                                </span>
+                              )}
+                            </div>
+                            {pendencia.informacoes_fechamento && (
+                              <div className="mt-3">
+                                <p className="text-sm text-slate-600">
+                                  <span className="font-medium">Informações de Fechamento:</span>
+                                </p>
+                                <p className="text-sm text-slate-800 mt-1 bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                  {pendencia.informacoes_fechamento}
+                                </p>
+                              </div>
                             )}
-                          </div>
+                          </>
                         )}
                       </div>
                     </div>
