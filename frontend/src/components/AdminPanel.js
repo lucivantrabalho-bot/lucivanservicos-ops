@@ -82,6 +82,7 @@ export default function AdminPanel() {
       loadAllPendencias();
       loadMonthlyStats();
       loadFormConfig();
+      loadKmlLocations();
     }
   }, [isAdmin]);
 
