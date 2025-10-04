@@ -1838,6 +1838,481 @@ class BackendTester:
             self.log_test("KML User Admin Access", False, f"Request failed: {str(e)}")
             return False
 
+    def test_kml_search_valid_queries(self):
+        """Test GET /api/kml/search with valid search queries"""
+        try:
+            # Test different search terms as specified in the review request
+            search_terms = [
+                {"query": "BRH", "limit": 10},
+                {"query": "Torre", "limit": 25},
+                {"query": "CN19", "limit": 50}
+            ]
+            
+            for search_data in search_terms:
+                response = requests.get(
+                    f"{self.base_url}/kml/search",
+                    headers=self.get_auth_headers(),
+                    params=search_data,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    required_fields = ["query", "total_found", "locations"]
+                    
+                    if all(field in result for field in required_fields):
+                        locations = result["locations"]
+                        total_found = result["total_found"]
+                        
+                        # Verify limit is respected (max 50)
+                        if len(locations) <= search_data["limit"] and len(locations) <= 50:
+                            self.log_test(f"KML Search - {search_data['query']}", True, 
+                                        f"Search for '{search_data['query']}' returned {total_found} results",
+                                        f"Returned {len(locations)} locations (limit: {search_data['limit']})")
+                        else:
+                            self.log_test(f"KML Search - {search_data['query']}", False, 
+                                        f"Limit not respected: returned {len(locations)} > {search_data['limit']}")
+                    else:
+                        self.log_test(f"KML Search - {search_data['query']}", False, 
+                                    "Missing required fields in response", result)
+                else:
+                    self.log_test(f"KML Search - {search_data['query']}", False, 
+                                f"Search failed with status {response.status_code}", response.text)
+            
+            return True
+                
+        except Exception as e:
+            self.log_test("KML Search Valid Queries", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_kml_search_invalid_query(self):
+        """Test GET /api/kml/search with query too short (should fail)"""
+        try:
+            # Test with single character (should fail - minimum 2 characters required)
+            response = requests.get(
+                f"{self.base_url}/kml/search",
+                headers=self.get_auth_headers(),
+                params={"query": "X", "limit": 10},
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                error_detail = response.json().get("detail", "")
+                if "2 caracteres" in error_detail or "2 characters" in error_detail:
+                    self.log_test("KML Search Invalid Query", True, 
+                                "Correctly rejected query with less than 2 characters",
+                                f"Error: {error_detail}")
+                    return True
+                else:
+                    self.log_test("KML Search Invalid Query", False, 
+                                f"Wrong error message for short query: {error_detail}")
+                    return False
+            else:
+                self.log_test("KML Search Invalid Query", False, 
+                            f"Should have returned 400 but got {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("KML Search Invalid Query", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_kml_search_performance(self):
+        """Test KML search performance and result limits"""
+        try:
+            # Test with a common term that might return many results
+            response = requests.get(
+                f"{self.base_url}/kml/search",
+                headers=self.get_auth_headers(),
+                params={"query": "Torre", "limit": 100},  # Request more than max allowed
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                locations = result.get("locations", [])
+                
+                # Verify maximum limit of 50 is enforced
+                if len(locations) <= 50:
+                    self.log_test("KML Search Performance", True, 
+                                f"Search correctly limited to maximum 50 results",
+                                f"Returned {len(locations)} locations despite requesting 100")
+                    return True
+                else:
+                    self.log_test("KML Search Performance", False, 
+                                f"Search returned {len(locations)} results, exceeding maximum of 50")
+                    return False
+            else:
+                self.log_test("KML Search Performance", False, 
+                            f"Search failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("KML Search Performance", False, f"Request failed: {str(e)}")
+            return False
+
+    def get_test_location_id(self):
+        """Get a location ID for observation testing"""
+        try:
+            # First try to search for a location
+            response = requests.get(
+                f"{self.base_url}/kml/search",
+                headers=self.get_auth_headers(),
+                params={"query": "Torre", "limit": 1},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                locations = result.get("locations", [])
+                if locations:
+                    return locations[0].get("id")
+            
+            # If search doesn't work, try getting all locations
+            response = requests.get(
+                f"{self.base_url}/kml/locations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                locations = response.json()
+                if locations and len(locations) > 0:
+                    # Create a synthetic location ID for testing
+                    return f"test_location_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            return None
+                
+        except Exception as e:
+            return None
+
+    def test_add_location_observation(self):
+        """Test POST /api/kml/locations/{location_id}/observations"""
+        try:
+            location_id = self.get_test_location_id()
+            if not location_id:
+                # Create a test location ID for testing
+                location_id = f"test_location_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            observation_text = "Esta torre precisa de manutenção preventiva"
+            
+            response = requests.post(
+                f"{self.base_url}/kml/locations/{location_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": observation_text},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["message", "observation_id"]
+                
+                if all(field in result for field in required_fields):
+                    observation_id = result["observation_id"]
+                    self.log_test("Add Location Observation", True, 
+                                f"Successfully added observation to location {location_id}",
+                                f"Observation ID: {observation_id}")
+                    return location_id, observation_id
+                else:
+                    self.log_test("Add Location Observation", False, 
+                                "Missing required fields in response", result)
+                    return None, None
+            else:
+                self.log_test("Add Location Observation", False, 
+                            f"Failed to add observation with status {response.status_code}", response.text)
+                return None, None
+                
+        except Exception as e:
+            self.log_test("Add Location Observation", False, f"Request failed: {str(e)}")
+            return None, None
+
+    def test_add_empty_observation(self):
+        """Test POST /api/kml/locations/{location_id}/observations with empty observation"""
+        try:
+            location_id = f"test_location_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            response = requests.post(
+                f"{self.base_url}/kml/locations/{location_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": ""},  # Empty observation
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                error_detail = response.json().get("detail", "")
+                if "vazia" in error_detail or "empty" in error_detail:
+                    self.log_test("Add Empty Observation", True, 
+                                "Correctly rejected empty observation",
+                                f"Error: {error_detail}")
+                    return True
+                else:
+                    self.log_test("Add Empty Observation", False, 
+                                f"Wrong error message for empty observation: {error_detail}")
+                    return False
+            else:
+                self.log_test("Add Empty Observation", False, 
+                            f"Should have returned 400 but got {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Add Empty Observation", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_get_location_observations(self, location_id):
+        """Test GET /api/kml/locations/{location_id}/observations"""
+        try:
+            if not location_id:
+                self.log_test("Get Location Observations", False, "No location ID provided")
+                return []
+            
+            response = requests.get(
+                f"{self.base_url}/kml/locations/{location_id}/observations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                observations = response.json()
+                if isinstance(observations, list):
+                    self.log_test("Get Location Observations", True, 
+                                f"Retrieved {len(observations)} observations for location {location_id}")
+                    return observations
+                else:
+                    self.log_test("Get Location Observations", False, 
+                                "Response should be a list", observations)
+                    return []
+            else:
+                self.log_test("Get Location Observations", False, 
+                            f"Failed to get observations with status {response.status_code}", response.text)
+                return []
+                
+        except Exception as e:
+            self.log_test("Get Location Observations", False, f"Request failed: {str(e)}")
+            return []
+
+    def test_delete_observation_own(self, observation_id):
+        """Test DELETE /api/kml/observations/{observation_id} - user deleting own observation"""
+        try:
+            if not observation_id:
+                self.log_test("Delete Own Observation", False, "No observation ID provided")
+                return False
+            
+            response = requests.delete(
+                f"{self.base_url}/kml/observations/{observation_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result:
+                    self.log_test("Delete Own Observation", True, 
+                                f"Successfully deleted observation {observation_id}",
+                                f"Message: {result['message']}")
+                    return True
+                else:
+                    self.log_test("Delete Own Observation", False, 
+                                "No success message in response", result)
+                    return False
+            else:
+                self.log_test("Delete Own Observation", False, 
+                            f"Failed to delete observation with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Delete Own Observation", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_delete_nonexistent_observation(self):
+        """Test DELETE /api/kml/observations/{observation_id} with non-existent ID"""
+        try:
+            fake_observation_id = f"fake_obs_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            response = requests.delete(
+                f"{self.base_url}/kml/observations/{fake_observation_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 404:
+                error_detail = response.json().get("detail", "")
+                self.log_test("Delete Nonexistent Observation", True, 
+                            "Correctly returned 404 for non-existent observation",
+                            f"Error: {error_detail}")
+                return True
+            else:
+                self.log_test("Delete Nonexistent Observation", False, 
+                            f"Should have returned 404 but got {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Delete Nonexistent Observation", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_observation_system_complete_flow(self):
+        """Test complete observation system flow as specified in review request"""
+        try:
+            print("\n" + "=" * 60)
+            print("🔍 TESTING COMPLETE OBSERVATION SYSTEM FLOW")
+            print("=" * 60)
+            print("Following the exact test scenario from Portuguese review request:")
+            print("1. Buscar uma localização específica")
+            print("2. Adicionar observação: 'Esta torre precisa de manutenção preventiva'")
+            print("3. Listar observações da localização")
+            print("4. Excluir a observação adicionada")
+            print()
+            
+            # Step 1: Search for a specific location
+            search_response = requests.get(
+                f"{self.base_url}/kml/search",
+                headers=self.get_auth_headers(),
+                params={"query": "Torre", "limit": 1},
+                timeout=10
+            )
+            
+            location_id = None
+            if search_response.status_code == 200:
+                search_result = search_response.json()
+                locations = search_result.get("locations", [])
+                if locations:
+                    location_id = locations[0].get("id")
+                    self.log_test("Observation Flow - Step 1", True, 
+                                f"Found location for testing: {locations[0].get('name', 'Unknown')}")
+                else:
+                    # Create a test location ID
+                    location_id = f"test_location_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    self.log_test("Observation Flow - Step 1", True, 
+                                f"Using test location ID: {location_id}")
+            else:
+                location_id = f"test_location_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                self.log_test("Observation Flow - Step 1", True, 
+                            f"Using test location ID: {location_id}")
+            
+            # Step 2: Add observation with exact text from review request
+            observation_text = "Esta torre precisa de manutenção preventiva"
+            add_response = requests.post(
+                f"{self.base_url}/kml/locations/{location_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": observation_text},
+                timeout=10
+            )
+            
+            observation_id = None
+            if add_response.status_code == 200:
+                add_result = add_response.json()
+                observation_id = add_result.get("observation_id")
+                self.log_test("Observation Flow - Step 2", True, 
+                            f"Added observation: '{observation_text}'",
+                            f"Observation ID: {observation_id}")
+            else:
+                self.log_test("Observation Flow - Step 2", False, 
+                            f"Failed to add observation: {add_response.status_code}", add_response.text)
+                return False
+            
+            # Step 3: List observations for the location
+            list_response = requests.get(
+                f"{self.base_url}/kml/locations/{location_id}/observations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if list_response.status_code == 200:
+                observations = list_response.json()
+                found_observation = any(obs.get("observation") == observation_text for obs in observations)
+                if found_observation:
+                    self.log_test("Observation Flow - Step 3", True, 
+                                f"Successfully listed observations - found our test observation",
+                                f"Total observations: {len(observations)}")
+                else:
+                    self.log_test("Observation Flow - Step 3", False, 
+                                f"Our observation not found in list of {len(observations)} observations")
+            else:
+                self.log_test("Observation Flow - Step 3", False, 
+                            f"Failed to list observations: {list_response.status_code}", list_response.text)
+            
+            # Step 4: Delete the added observation
+            if observation_id:
+                delete_response = requests.delete(
+                    f"{self.base_url}/kml/observations/{observation_id}",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if delete_response.status_code == 200:
+                    delete_result = delete_response.json()
+                    self.log_test("Observation Flow - Step 4", True, 
+                                f"Successfully deleted observation",
+                                f"Message: {delete_result.get('message', 'No message')}")
+                    
+                    # Verify deletion by listing again
+                    verify_response = requests.get(
+                        f"{self.base_url}/kml/locations/{location_id}/observations",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    
+                    if verify_response.status_code == 200:
+                        remaining_observations = verify_response.json()
+                        still_exists = any(obs.get("observation") == observation_text for obs in remaining_observations)
+                        if not still_exists:
+                            self.log_test("Observation Flow - Verification", True, 
+                                        "Verified observation was successfully deleted")
+                        else:
+                            self.log_test("Observation Flow - Verification", False, 
+                                        "Observation still exists after deletion")
+                else:
+                    self.log_test("Observation Flow - Step 4", False, 
+                                f"Failed to delete observation: {delete_response.status_code}", delete_response.text)
+            
+            print("\n✅ Complete observation system flow test completed")
+            return True
+                
+        except Exception as e:
+            self.log_test("Observation System Complete Flow", False, f"Test failed with exception: {str(e)}")
+            return False
+
+    def test_kml_authentication_requirements(self):
+        """Test that KML endpoints require proper authentication"""
+        try:
+            endpoints_to_test = [
+                ("GET", "/kml/search?query=test"),
+                ("GET", "/kml/locations/test-id/observations"),
+                ("POST", "/kml/locations/test-id/observations"),
+                ("DELETE", "/kml/observations/test-id")
+            ]
+            
+            auth_tests_passed = 0
+            total_auth_tests = len(endpoints_to_test)
+            
+            for method, endpoint in endpoints_to_test:
+                if method == "GET":
+                    response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+                elif method == "POST":
+                    response = requests.post(f"{self.base_url}{endpoint}", 
+                                           json={"observation": "test"}, timeout=10)
+                elif method == "DELETE":
+                    response = requests.delete(f"{self.base_url}{endpoint}", timeout=10)
+                
+                if response.status_code in [401, 403]:
+                    auth_tests_passed += 1
+                    self.log_test(f"KML Auth Required - {method} {endpoint}", True, 
+                                f"Correctly requires authentication (status {response.status_code})")
+                else:
+                    self.log_test(f"KML Auth Required - {method} {endpoint}", False, 
+                                f"Should require auth but got status {response.status_code}")
+            
+            if auth_tests_passed == total_auth_tests:
+                self.log_test("KML Authentication Requirements", True, 
+                            f"All {total_auth_tests} KML endpoints correctly require authentication")
+                return True
+            else:
+                self.log_test("KML Authentication Requirements", False, 
+                            f"Only {auth_tests_passed}/{total_auth_tests} endpoints require authentication")
+                return False
+                
+        except Exception as e:
+            self.log_test("KML Authentication Requirements", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests including new KML functionality"""
         print("=" * 80)
