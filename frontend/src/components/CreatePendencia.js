@@ -41,6 +41,11 @@ export default function CreatePendencia() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Estados para opções dinâmicas
+  const [energiaOptions, setEnergiaOptions] = useState([]);
+  const [arconOptions, setArconOptions] = useState([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
 
   // Função para converter arquivo para base64
   const fileToBase64 = (file) => {
