@@ -79,8 +79,30 @@ code {
 @layer base {
   * {
     @apply border-border;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-white/20 dark:border-slate-700/20;
+  }
+  
+  .btn-hover {
+    @apply transform transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95;
+  }
+  
+  .card-hover {
+    @apply transform transition-all duration-300 hover:scale-102 hover:shadow-xl;
+  }
+  
+  .fade-in {
+    @apply animate-in fade-in-0 duration-500;
+  }
+  
+  .slide-up {
+    @apply animate-in slide-in-from-bottom-4 duration-500;
+  }
 }
