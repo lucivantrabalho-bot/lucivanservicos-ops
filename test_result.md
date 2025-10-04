@@ -215,39 +215,48 @@
 
   - task: "Dashboard Statistics Advanced - POST /reports/dashboard-stats"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "IMPLEMENTADO: Novo endpoint para estatísticas avançadas do dashboard com filtros por período, site, tipo, status, validação. Retorna métricas completas incluindo taxa de finalização, usuários ativos, distribuições por tipo/site/mês usando agregações MongoDB."
+        - working: true
+          agent: "testing"
+          comment: "TESTED SUCCESSFULLY: ✅ IndexError FIXED - Dashboard stats endpoint working correctly with both empty filters ({}) and data filters (date ranges). Returns all required fields: total_pendencias, pendencias_abertas, pendencias_finalizadas, pendencias_validadas, pendencias_rejeitadas, pendencias_por_tipo, pendencias_por_site, pendencias_por_mes, usuarios_ativos, taxa_finalizacao. Authentication working properly."
 
   - task: "Export Advanced - POST /reports/export-advanced"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "IMPLEMENTADO: Exportação Excel avançada com formatação melhorada, cabeçalhos coloridos, status com cores, informações de filtros no topo, células coloridas por status de validação. Suporte a filtros avançados e múltiplas opções de configuração."
+        - working: true
+          agent: "testing"
+          comment: "TESTED SUCCESSFULLY: ✅ ExportRequest model working correctly - NEW structure with 'filters' and 'export_config' objects implemented and functional. Excel export generates properly formatted files (5292+ bytes) with correct Content-Type. Fixed AttributeError with MergedCell objects in column width adjustment. Supports various filters (date, site, tipo) and export configurations (format: excel, include_photos, group_by)."
 
   - task: "Performance Metrics - GET /reports/performance-metrics"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "IMPLEMENTADO: Endpoint para métricas de performance dos últimos N dias. Calcula tempo médio de finalização, estatísticas por dia, usuários mais ativos. Usa agregações MongoDB para análise de performance detalhada."
+        - working: true
+          agent: "testing"
+          comment: "TESTED SUCCESSFULLY: ✅ IndexError FIXED - Performance metrics endpoint working correctly with both default (?days=30) and custom parameters (?days=7). Returns all required fields: periodo_dias, tempo_medio_finalizacao_horas, tempo_min_finalizacao_horas, tempo_max_finalizacao_horas, pendencias_por_dia, usuarios_mais_ativos. Admin authentication required and working properly."
 
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
