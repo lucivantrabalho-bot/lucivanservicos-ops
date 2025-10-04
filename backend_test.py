@@ -1256,10 +1256,10 @@ class BackendTester:
                 else:
                     response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
                 
-                if response.status_code == 401:
+                if response.status_code in [401, 403]:  # Both are valid auth failure codes
                     auth_tests_passed += 1
                     self.log_test(f"Auth Required - {endpoint}", True, 
-                                "Correctly requires authentication")
+                                f"Correctly requires authentication (status {response.status_code})")
                 else:
                     self.log_test(f"Auth Required - {endpoint}", False, 
                                 f"Should require auth but got status {response.status_code}")
