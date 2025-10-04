@@ -364,6 +364,107 @@ export default function LocationsMap() {
             ))}
           </div>
         )}
+
+        {/* Observation Modal */}
+        {observationModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+              <div className="p-6 border-b dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      Observações - {observationModal.location?.name}
+                    </h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {observationModal.location?.source_file}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={closeObservationModal}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-96 space-y-4">
+                {/* Add New Observation */}
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-3">
+                    Adicionar Nova Observação
+                  </h4>
+                  <div className="space-y-3">
+                    <textarea
+                      value={newObservation}
+                      onChange={(e) => setNewObservation(e.target.value)}
+                      placeholder="Digite suas observações sobre esta localização..."
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
+                      rows={3}
+                    />
+                    <Button 
+                      onClick={addObservation}
+                      disabled={!newObservation.trim()}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Observação
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Existing Observations */}
+                <div>
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-3">
+                    Observações ({observationModal.observations.length})
+                  </h4>
+                  
+                  {observationModal.observations.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma observação ainda.</p>
+                      <p className="text-sm">Seja o primeiro a adicionar uma observação!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {observationModal.observations.map((obs, index) => (
+                        <div key={index} className="bg-white dark:bg-slate-700 rounded-lg p-4 border dark:border-slate-600">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <User className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  {obs.username}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  {new Date(obs.created_at).toLocaleDateString('pt-BR')} às {new Date(obs.created_at).toLocaleTimeString('pt-BR')}
+                                </span>
+                              </div>
+                              <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                                {obs.observation}
+                              </p>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteObservation(obs.id)}
+                              className="ml-3 p-1 h-8 w-8 text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
