@@ -26,6 +26,8 @@ export default function Login() {
     confirmPassword: ''
   });
 
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
