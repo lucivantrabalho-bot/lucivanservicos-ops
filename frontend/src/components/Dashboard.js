@@ -225,7 +225,9 @@ export default function Dashboard() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-white" />
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7V10C2 16 6 20.5 12 22C18 20.5 22 16 22 10V7L12 2M12 4.5L19.5 8.5V10C19.5 15 16.5 18.5 12 20C7.5 18.5 4.5 15 4.5 10V8.5L12 4.5M7 14L9 16L17 8L15.59 6.59L9 13.17L8.41 12.59L7 14Z"/>
+                </svg>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Gerenciador CN19</h1>
