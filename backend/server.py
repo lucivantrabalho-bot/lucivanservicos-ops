@@ -128,6 +128,35 @@ class FormConfigUpdate(BaseModel):
     arcon_options: List[str]
     foto_base64: Optional[str] = None
 
+# Novos modelos para relatórios avançados
+class ReportFilter(BaseModel):
+    start_date: Optional[str] = None  # formato: YYYY-MM-DD
+    end_date: Optional[str] = None
+    site: Optional[str] = None
+    tipo: Optional[str] = None
+    subtipo: Optional[str] = None
+    status: Optional[str] = None
+    validation_status: Optional[str] = None
+    usuario_criacao: Optional[str] = None
+    usuario_finalizacao: Optional[str] = None
+
+class DashboardStats(BaseModel):
+    total_pendencias: int
+    pendencias_abertas: int
+    pendencias_finalizadas: int
+    pendencias_validadas: int
+    pendencias_rejeitadas: int
+    pendencias_por_tipo: dict
+    pendencias_por_site: dict
+    pendencias_por_mes: dict
+    usuarios_ativos: int
+    taxa_finalizacao: float
+
+class ExportFormat(BaseModel):
+    format: str = "excel"  # "excel" ou "pdf"
+    include_photos: bool = False
+    group_by: Optional[str] = None  # "site", "tipo", "usuario", etc.
+
 
 # Auth helpers
 def verify_password(plain_password, hashed_password):
