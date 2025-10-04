@@ -112,13 +112,18 @@ export default function FinalizeModal({
       return;
     }
 
+    if (!photo) {
+      setError('A foto de fechamento é obrigatória');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await axios.put(`${API_BASE}/pendencias/${pendencia.id}`, {
         status: 'Finalizado',
         informacoes_fechamento: informacoesFechamento.trim(),
-        foto_fechamento_base64: photo || null
+        foto_fechamento_base64: photo
       });
 
       onSuccess();
