@@ -153,6 +153,66 @@
           agent: "testing"
           comment: "COMPREHENSIVE BUG INVESTIGATION COMPLETED: Investigated reported bug where users could login with old password after admin reset. Created comprehensive test suite including database-level verification. FINDINGS: Password reset functionality working correctly - password hash is properly updated in database, new password works, old password is correctly rejected. Bug NOT reproduced. Tested with both new users and existing users. All 18 tests passed (100% success rate)."
 
+  - task: "Monthly Statistics with Validation Filter - /stats/monthly"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves monthly statistics for October 2025. Only counts pendencies with validation_status = 'APPROVED' as required. Returns proper structure with month, year, most_created, and most_finished fields. API working correctly."
+
+  - task: "Form Configuration Management - GET /admin/form-config"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves form configuration with 11 energia_options and 14 arcon_options. Returns default configuration when none exists as expected. API working correctly."
+
+  - task: "Form Configuration Management - PUT /admin/form-config"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully updates form configuration. Added test items to both energia_options and arcon_options lists. Verification confirmed that updated items are properly saved and retrieved. Configuration update working correctly."
+
+  - task: "User Password Change - PUT /user/change-password"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully validates current password and updates to new password. Correctly rejects incorrect current passwords (400 error). Correctly rejects passwords shorter than 4 characters (400 error). Password change functionality working correctly with proper validations."
+
+  - task: "Individual User Statistics - GET /user/stats"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully retrieves individual user statistics for current month (October 2025). Returns proper structure with month, year, created_count, finished_count, approved_created_count, and approved_finished_count fields. Statistics calculation working correctly."
+
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
     implemented: true
