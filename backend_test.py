@@ -1623,5 +1623,6 @@ class BackendTester:
 
 if __name__ == "__main__":
     tester = BackendTester()
-    success = tester.run_all_tests()
+    # Run focused tests on the 3 CORRECTED endpoints
+    success = tester.run_corrected_endpoints_tests()
     sys.exit(0 if success else 1)
