@@ -568,6 +568,80 @@ async def update_form_config(config: FormConfigUpdate, admin_user: User = Depend
     )
     return {"message": "Configuração do formulário atualizada com sucesso"}
 
+# Endpoints para perfil do usuário
+@api_router.put("/user/change-password")
+async def change_user_password(password_change: PasswordChange, current_user: User = Depends(get_current_user)):
+    # Verificar senha atual
+    if not verify_password(password_change.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Validar nova senha
+    if len(password_change.new_password) < 4:
+        raise HTTPException(status_code=400, detail="New password must be at least 4 characters")
+    
+    # Atualizar senha
+    hashed_password = get_password_hash(password_change.new_password)
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"hashed_password": hashed_password}}
+    )
+    
+    return {"message": "Password changed successfully"}
+
+@api_router.get("/user/stats")
+async def get_user_stats(current_user: User = Depends(get_current_user)):
+    from datetime import datetime, timezone
+    import calendar
+    
+    # Get current month/year
+    now = datetime.now(timezone.utc)
+    current_month = now.month
+    current_year = now.year
+    
+    # Stats for current month
+    start_date = datetime(current_year, current_month, 1, tzinfo=timezone.utc)
+    if current_month == 12:
+        end_date = datetime(current_year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(current_year, current_month + 1, 1, tzinfo=timezone.utc)
+    
+    # Pendências criadas pelo usuário no mês
+    created_count = await db.pendencias.count_documents({
+        "usuario_criacao": current_user.username,
+        "created_at": {"$gte": start_date, "$lt": end_date}
+    })
+    
+    # Pendências finalizadas pelo usuário no mês
+    finished_count = await db.pendencias.count_documents({
+        "usuario_finalizacao": current_user.username,
+        "data_finalizacao": {"$gte": start_date, "$lt": end_date},
+        "status": "Finalizado"
+    })
+    
+    # Pendências aprovadas pelo admin que o usuário criou
+    approved_created_count = await db.pendencias.count_documents({
+        "usuario_criacao": current_user.username,
+        "created_at": {"$gte": start_date, "$lt": end_date},
+        "validation_status": "APPROVED"
+    })
+    
+    # Pendências aprovadas pelo admin que o usuário finalizou
+    approved_finished_count = await db.pendencias.count_documents({
+        "usuario_finalizacao": current_user.username,
+        "data_finalizacao": {"$gte": start_date, "$lt": end_date},
+        "status": "Finalizado",
+        "validation_status": "APPROVED"
+    })
+    
+    return {
+        "month": calendar.month_name[current_month],
+        "year": current_year,
+        "created_count": created_count,
+        "finished_count": finished_count,
+        "approved_created_count": approved_created_count,
+        "approved_finished_count": approved_finished_count
+    }
+
 @api_router.get("/stats/monthly")
 async def get_monthly_stats(current_user: User = Depends(get_current_user)):
     from datetime import datetime, timezone
