@@ -215,9 +215,9 @@ export default function DashboardCharts() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button onClick={exportToExcel} variant="outline" size="sm">
             <Download className="w-4 h-4 mr-2" />
-            Exportar
+            Exportar Excel
           </Button>
         </div>
 
