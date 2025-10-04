@@ -257,6 +257,15 @@ export default function Dashboard() {
               )}
               
               <Button
+                onClick={() => navigate('/profile')}
+                data-testid="profile-btn"
+                className="btn-hover bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Perfil
+              </Button>
+              
+              <Button
                 onClick={logout}
                 variant="outline"
                 data-testid="logout-btn"
