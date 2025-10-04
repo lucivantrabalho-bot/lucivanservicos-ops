@@ -1145,7 +1145,8 @@ async def get_performance_metrics(
     data = result[0] if result else {}
     
     # Processar tempo médio
-    tempo_stats = data.get("tempo_medio_finalizacao", [{}])[0]
+    tempo_list = data.get("tempo_medio_finalizacao", [])
+    tempo_stats = tempo_list[0] if tempo_list else {}
     
     return {
         "periodo_dias": days,
