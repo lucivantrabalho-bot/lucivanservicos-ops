@@ -156,15 +156,18 @@
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/components/AdminPanel.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Implementada nova aba com listagem de todos usuários, badges de role e status, botões para reset de senha e exclusão com proteção para admin não excluir própria conta"
+        - working: true
+          agent: "main"
+          comment: "TESTADO: Nova aba funcionando corretamente, exibe lista de usuários com badges apropriados (Admin/Usuário, status), botões funcionais. Interface responsiva e intuitiva."
 
   - task: "Modal de Reset de Senha"
     implemented: true
