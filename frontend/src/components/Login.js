@@ -271,6 +271,12 @@ export default function Login() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Connection Diagnostic Modal */}
+      <ConnectionDiagnostic 
+        isOpen={showDiagnostic} 
+        onClose={() => setShowDiagnostic(false)} 
+      />
     </div>
   );
 }
