@@ -580,12 +580,26 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Finalize Modal */}
+        {/* Modals */}
         <FinalizeModal
           isOpen={finalizeModal.isOpen}
           onClose={closeFinalizeModal}
           pendencia={finalizeModal.pendencia}
           onSuccess={handleFinalizeSuccess}
+        />
+        
+        <EditModal
+          isOpen={editModal.isOpen}
+          onClose={closeEditModal}
+          pendencia={editModal.pendencia}
+          onSuccess={handleEditSuccess}
+        />
+        
+        <DeleteModal
+          isOpen={deleteModal.isOpen}
+          onClose={closeDeleteModal}
+          pendencia={deleteModal.pendencia}
+          onSuccess={handleDeleteSuccess}
         />
       </div>
     </div>
