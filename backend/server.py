@@ -610,75 +610,155 @@ async def upload_kml_file(
     try:
         # Read file content
         content = await file.read()
-        content_str = content.decode('utf-8')
         
-        # Parse KML
-        root = ET.fromstring(content_str)
+        # Try different encodings
+        try:
+            content_str = content.decode('utf-8')
+        except UnicodeDecodeError:
+            try:
+                content_str = content.decode('utf-8-sig')  # BOM
+            except UnicodeDecodeError:
+                content_str = content.decode('latin1')
         
-        # Define KML namespace
-        ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+        # Clean content - remove BOM and extra whitespace
+        content_str = content_str.strip()
+        if content_str.startswith('\ufeff'):
+            content_str = content_str[1:]
+        
+        # Parse KML with multiple namespace handling
+        try:
+            root = ET.fromstring(content_str)
+        except ET.ParseError as e:
+            # Try to fix common XML issues
+            content_str = content_str.replace('&', '&amp;')
+            root = ET.fromstring(content_str)
+        
+        # Get the default namespace from root
+        namespace = ""
+        if root.tag.startswith('{'):
+            namespace = root.tag[1:root.tag.find('}')]
+        
+        # Define possible namespaces
+        namespaces = {
+            '': namespace if namespace else 'http://www.opengis.net/kml/2.2',
+            'kml': 'http://www.opengis.net/kml/2.2'
+        }
         
         locations = []
         
-        # Extract placemarks
-        placemarks = root.findall('.//kml:Placemark', ns)
+        # Try multiple ways to find placemarks
+        placemarks = []
+        
+        # Method 1: With namespace
+        for ns_prefix, ns_uri in namespaces.items():
+            if ns_prefix:
+                placemarks.extend(root.findall(f'.//{{{ns_uri}}}Placemark'))
+            else:
+                # No namespace
+                placemarks.extend(root.findall('.//Placemark'))
+        
+        # Method 2: Search without namespace if nothing found
+        if not placemarks:
+            for elem in root.iter():
+                if elem.tag.endswith('Placemark') or elem.tag == 'Placemark':
+                    placemarks.append(elem)
         
         for placemark in placemarks:
             location_data = {}
             
-            # Get name
-            name_elem = placemark.find('kml:name', ns)
-            if name_elem is not None:
-                location_data['name'] = name_elem.text or 'Unnamed'
-            else:
-                location_data['name'] = 'Unnamed'
+            # Extract name - try multiple methods
+            name = None
+            for elem in placemark.iter():
+                if elem.tag.endswith('name') or elem.tag == 'name':
+                    if elem.text and elem.text.strip():
+                        name = elem.text.strip()
+                        break
             
-            # Get description
-            desc_elem = placemark.find('kml:description', ns)
-            if desc_elem is not None:
-                location_data['description'] = desc_elem.text or ''
-            else:
-                location_data['description'] = ''
+            location_data['name'] = name or 'Unnamed Location'
             
-            # Get coordinates - try different coordinate elements
+            # Extract description
+            description = None
+            for elem in placemark.iter():
+                if elem.tag.endswith('description') or elem.tag == 'description':
+                    if elem.text and elem.text.strip():
+                        description = elem.text.strip()
+                        break
+            
+            location_data['description'] = description or ''
+            
+            # Extract extended data
+            extended_data = {}
+            for elem in placemark.iter():
+                if elem.tag.endswith('ExtendedData') or elem.tag == 'ExtendedData':
+                    # Look for SimpleData elements
+                    for data_elem in elem.iter():
+                        if data_elem.tag.endswith('SimpleData') or data_elem.tag == 'SimpleData':
+                            key = data_elem.get('name', 'unknown')
+                            value = data_elem.text or ''
+                            extended_data[key] = value
+                        elif data_elem.tag.endswith('Data') or data_elem.tag == 'Data':
+                            key = data_elem.get('name', 'unknown')
+                            # Look for value element inside Data
+                            for value_elem in data_elem.iter():
+                                if value_elem.tag.endswith('value') or value_elem.tag == 'value':
+                                    extended_data[key] = value_elem.text or ''
+                                    break
+            
+            # Add extended data to description if available
+            if extended_data:
+                extra_info = []
+                for key, value in extended_data.items():
+                    if value:
+                        extra_info.append(f"{key}: {value}")
+                if extra_info:
+                    if location_data['description']:
+                        location_data['description'] += "\n" + "\n".join(extra_info)
+                    else:
+                        location_data['description'] = "\n".join(extra_info)
+            
+            # Extract coordinates - comprehensive search
             coordinates = None
+            coord_elements = []
             
-            # Try Point coordinates
-            point = placemark.find('.//kml:Point/kml:coordinates', ns)
-            if point is not None:
-                coordinates = point.text.strip()
+            # Search for all coordinate elements
+            for elem in placemark.iter():
+                if elem.tag.endswith('coordinates') or elem.tag == 'coordinates':
+                    if elem.text and elem.text.strip():
+                        coord_elements.append(elem.text.strip())
             
-            # Try LineString coordinates  
-            if not coordinates:
-                linestring = placemark.find('.//kml:LineString/kml:coordinates', ns)
-                if linestring is not None:
-                    coordinates = linestring.text.strip()
-            
-            # Try Polygon coordinates
-            if not coordinates:
-                polygon = placemark.find('.//kml:Polygon/kml:outerBoundaryIs/kml:LinearRing/kml:coordinates', ns)
-                if polygon is not None:
-                    coordinates = polygon.text.strip()
+            # Use first valid coordinates found
+            for coord_text in coord_elements:
+                coordinates = coord_text
+                break
             
             if coordinates:
-                # Parse coordinates (longitude,latitude,altitude format)
-                coord_lines = coordinates.strip().split('\n')
+                # Parse coordinates (longitude,latitude,altitude format in KML)
                 coord_pairs = []
                 
-                for line in coord_lines:
-                    line = line.strip()
-                    if line:
-                        # Split by whitespace or comma-separated groups
-                        coords = re.findall(r'-?\d+\.?\d*,-?\d+\.?\d*(?:,-?\d+\.?\d*)?', line)
-                        for coord in coords:
-                            parts = coord.split(',')
-                            if len(parts) >= 2:
-                                try:
-                                    lng = float(parts[0])
-                                    lat = float(parts[1])
-                                    coord_pairs.append({'lat': lat, 'lng': lng})
-                                except ValueError:
-                                    continue
+                # Clean coordinate string
+                coordinates = re.sub(r'\s+', ' ', coordinates.strip())
+                
+                # Split by various delimiters
+                coordinate_parts = re.split(r'[\s\n\r\t]+', coordinates)
+                
+                for part in coordinate_parts:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    
+                    # Match coordinate patterns
+                    # Format: longitude,latitude[,altitude]
+                    coord_match = re.match(r'^(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?$', part)
+                    if coord_match:
+                        try:
+                            lng = float(coord_match.group(1))
+                            lat = float(coord_match.group(2))
+                            
+                            # Validate coordinates
+                            if -180 <= lng <= 180 and -90 <= lat <= 90:
+                                coord_pairs.append({'lat': lat, 'lng': lng})
+                        except (ValueError, TypeError):
+                            continue
                 
                 if coord_pairs:
                     # For multiple coordinates, take the first or center
@@ -696,7 +776,12 @@ async def upload_kml_file(
                     locations.append(location_data)
         
         if not locations:
-            raise HTTPException(status_code=400, detail="Nenhuma localização válida encontrada no arquivo KML")
+            # Log the raw content for debugging (first 1000 chars)
+            debug_content = content_str[:1000] if len(content_str) > 1000 else content_str
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Nenhuma localização válida encontrada no arquivo KML. Verifique se o arquivo contém elementos Placemark com coordenadas válidas. Debug: {debug_content}"
+            )
         
         # Save to database
         kml_data = {
@@ -718,8 +803,8 @@ async def upload_kml_file(
             "locations": locations[:10]  # Return first 10 as preview
         }
         
-    except ET.ParseError:
-        raise HTTPException(status_code=400, detail="Arquivo KML inválido ou corrompido")
+    except ET.ParseError as e:
+        raise HTTPException(status_code=400, detail=f"Arquivo KML inválido ou corrompido: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo KML: {str(e)}")
 
