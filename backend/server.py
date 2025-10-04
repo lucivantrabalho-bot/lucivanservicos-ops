@@ -73,6 +73,8 @@ class Pendencia(BaseModel):
     usuario_criacao: str
     usuario_finalizacao: Optional[str] = None
     data_finalizacao: Optional[datetime] = None
+    informacoes_fechamento: Optional[str] = None
+    foto_fechamento_base64: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PendenciaCreate(BaseModel):
