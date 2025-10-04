@@ -931,6 +931,10 @@ async def export_pendencias_advanced(
     from datetime import datetime, timezone
     import json
     
+    # Extrair filtros e config da requisição
+    filters = request.filters
+    export_config = request.export_config
+    
     # Construir query (mesmo código do dashboard)
     query = {}
     
