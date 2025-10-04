@@ -1367,10 +1367,16 @@ class BackendTester:
         print()
         
         if test_username:
-            # Test login with PENDING user (should be blocked)
+            # Test login with PENDING user
             print("🔍 Testing Login with PENDING User...")
             self.test_login_pending_user(test_username, test_password)
             print()
+            
+            # Test if registration token can access endpoints
+            if pending_token:
+                print("🔍 Testing PENDING User Token Access...")
+                self.test_pending_user_token_access(pending_token)
+                print()
         
         # Test 2: New Report Endpoints
         print("🔍 Testing Report Endpoints...")
