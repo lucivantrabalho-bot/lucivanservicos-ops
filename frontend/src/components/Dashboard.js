@@ -266,6 +266,8 @@ export default function Dashboard() {
                 Perfil
               </Button>
               
+              <ThemeToggle />
+              
               <Button
                 onClick={logout}
                 variant="outline"
