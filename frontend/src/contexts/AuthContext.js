@@ -57,7 +57,7 @@ export function AuthProvider({ children }) {
         password
       });
       
-      const { access_token, user_id, username: userName } = response.data;
+      const { access_token, user_id, username: userName, role } = response.data;
       
       localStorage.setItem('token', access_token);
       setToken(access_token);
@@ -80,7 +80,7 @@ export function AuthProvider({ children }) {
         password
       });
       
-      const { access_token, user_id, username: userName } = response.data;
+      const { access_token, user_id, username: userName, role } = response.data;
       
       localStorage.setItem('token', access_token);
       setToken(access_token);
