@@ -12,8 +12,10 @@ import {
   BarChart3, 
   Download,
   RefreshCw,
-  CalendarDays
+  CalendarDays,
+  ArrowLeft
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
