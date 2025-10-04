@@ -129,7 +129,22 @@ export default function Login() {
               {error && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    <div className="flex items-center justify-between">
+                      <span>{error}</span>
+                      {error.includes('conexão') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowDiagnostic(true)}
+                          className="ml-2"
+                        >
+                          <Network className="w-4 h-4 mr-1" />
+                          Diagnosticar
+                        </Button>
+                      )}
+                    </div>
+                  </AlertDescription>
                 </Alert>
               )}
               
