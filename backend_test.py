@@ -1396,17 +1396,459 @@ class BackendTester:
             self.log_test("Authentication Required", False, f"Request failed: {str(e)}")
             return False
 
+    def create_test_kml_file_content(self):
+        """Create test KML file content"""
+        return '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Teste Local Brasília</name>
+      <description>Local de teste em Brasília</description>
+      <Point>
+        <coordinates>-47.8825,-15.7942,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Teste Local São Paulo</name>
+      <description>Local de teste em São Paulo</description>
+      <Point>
+        <coordinates>-46.6333,-23.5505,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>'''
+
+    def test_admin_upload_kml(self):
+        """Test POST /api/admin/upload-kml - upload KML file"""
+        try:
+            import tempfile
+            import os
+            
+            # Create temporary KML file
+            kml_content = self.create_test_kml_file_content()
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False) as tmp_file:
+                tmp_file.write(kml_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Upload KML file
+                with open(tmp_file_path, 'rb') as kml_file:
+                    files = {'file': ('test_locations.kml', kml_file, 'application/vnd.google-earth.kml+xml')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    required_fields = ["message", "kml_id", "total_locations", "locations"]
+                    
+                    if all(field in result for field in required_fields):
+                        if result["total_locations"] >= 2:  # We expect 2 locations from our test KML
+                            self.log_test("Admin Upload KML", True, 
+                                        f"Successfully uploaded KML file with {result['total_locations']} locations",
+                                        f"KML ID: {result['kml_id']}")
+                            return result["kml_id"]
+                        else:
+                            self.log_test("Admin Upload KML", False, 
+                                        f"Expected at least 2 locations but got {result['total_locations']}")
+                            return None
+                    else:
+                        self.log_test("Admin Upload KML", False, 
+                                    "Missing required fields in response", result)
+                        return None
+                else:
+                    self.log_test("Admin Upload KML", False, 
+                                f"Upload failed with status {response.status_code}", response.text)
+                    return None
+                    
+            finally:
+                # Cleanup temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            self.log_test("Admin Upload KML", False, f"Request failed: {str(e)}")
+            return None
+
+    def test_admin_upload_invalid_kml(self):
+        """Test POST /api/admin/upload-kml with invalid file"""
+        try:
+            import tempfile
+            import os
+            
+            # Create invalid KML content
+            invalid_content = "This is not a valid KML file"
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False) as tmp_file:
+                tmp_file.write(invalid_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Upload invalid KML file
+                with open(tmp_file_path, 'rb') as kml_file:
+                    files = {'file': ('invalid.kml', kml_file, 'application/vnd.google-earth.kml+xml')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response.status_code == 400:
+                    error_detail = response.json().get("detail", "")
+                    if "inválido" in error_detail.lower() or "invalid" in error_detail.lower() or "corrompido" in error_detail.lower():
+                        self.log_test("Admin Upload Invalid KML", True, 
+                                    "Correctly rejected invalid KML file",
+                                    f"Error: {error_detail}")
+                        return True
+                    else:
+                        self.log_test("Admin Upload Invalid KML", False, 
+                                    f"Wrong error message for invalid KML: {error_detail}")
+                        return False
+                else:
+                    self.log_test("Admin Upload Invalid KML", False, 
+                                f"Should have rejected invalid KML but got status {response.status_code}")
+                    return False
+                    
+            finally:
+                # Cleanup temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            self.log_test("Admin Upload Invalid KML", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_admin_upload_non_kml_file(self):
+        """Test POST /api/admin/upload-kml with non-KML file extension"""
+        try:
+            import tempfile
+            import os
+            
+            # Create text file with .txt extension
+            content = "This is a text file, not KML"
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp_file:
+                tmp_file.write(content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Upload non-KML file
+                with open(tmp_file_path, 'rb') as txt_file:
+                    files = {'file': ('test.txt', txt_file, 'text/plain')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response.status_code == 400:
+                    error_detail = response.json().get("detail", "")
+                    if "kml" in error_detail.lower():
+                        self.log_test("Admin Upload Non-KML File", True, 
+                                    "Correctly rejected non-KML file extension",
+                                    f"Error: {error_detail}")
+                        return True
+                    else:
+                        self.log_test("Admin Upload Non-KML File", False, 
+                                    f"Wrong error message for non-KML file: {error_detail}")
+                        return False
+                else:
+                    self.log_test("Admin Upload Non-KML File", False, 
+                                f"Should have rejected non-KML file but got status {response.status_code}")
+                    return False
+                    
+            finally:
+                # Cleanup temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            self.log_test("Admin Upload Non-KML File", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_get_kml_locations_as_user(self):
+        """Test GET /api/kml/locations as regular user"""
+        try:
+            # Create a regular user for testing
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("Get KML Locations (User)", False, "Failed to create test user")
+                return False
+            
+            # Login as regular user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("Get KML Locations (User)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Get KML locations as user
+            response = requests.get(
+                f"{self.base_url}/kml/locations",
+                headers=user_headers,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                locations = response.json()
+                if isinstance(locations, list):
+                    self.log_test("Get KML Locations (User)", True, 
+                                f"Regular user can access KML locations ({len(locations)} locations)",
+                                f"Sample locations available")
+                    
+                    # Cleanup - delete test user
+                    users_response = requests.get(
+                        f"{self.base_url}/admin/all-users",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    users = users_response.json()
+                    test_user = next((u for u in users if u.get("username") == username), None)
+                    if test_user:
+                        requests.delete(
+                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                    
+                    return True
+                else:
+                    self.log_test("Get KML Locations (User)", False, 
+                                "KML locations should be a list", locations)
+                    return False
+            else:
+                self.log_test("Get KML Locations (User)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Get KML Locations (User)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_get_kml_locations_as_admin(self):
+        """Test GET /api/kml/locations as admin"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/kml/locations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                locations = response.json()
+                if isinstance(locations, list):
+                    self.log_test("Get KML Locations (Admin)", True, 
+                                f"Admin can access KML locations ({len(locations)} locations)")
+                    return locations
+                else:
+                    self.log_test("Get KML Locations (Admin)", False, 
+                                "KML locations should be a list", locations)
+                    return []
+            else:
+                self.log_test("Get KML Locations (Admin)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return []
+                
+        except Exception as e:
+            self.log_test("Get KML Locations (Admin)", False, f"Request failed: {str(e)}")
+            return []
+
+    def test_admin_delete_kml(self, kml_id):
+        """Test DELETE /api/admin/kml/{kml_id}"""
+        try:
+            if not kml_id:
+                self.log_test("Admin Delete KML", False, "No KML ID provided")
+                return False
+            
+            response = requests.delete(
+                f"{self.base_url}/admin/kml/{kml_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result:
+                    self.log_test("Admin Delete KML", True, 
+                                f"Successfully deleted KML data {kml_id}",
+                                f"Message: {result['message']}")
+                    return True
+                else:
+                    self.log_test("Admin Delete KML", False, 
+                                "No success message in response", result)
+                    return False
+            elif response.status_code == 404:
+                self.log_test("Admin Delete KML", True, 
+                            f"KML data {kml_id} not found (expected if already deleted)")
+                return True
+            else:
+                self.log_test("Admin Delete KML", False, 
+                            f"Delete failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Delete KML", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_kml_unauthorized_access(self):
+        """Test KML admin endpoints without authentication"""
+        try:
+            # Test upload without auth
+            import tempfile
+            import os
+            
+            kml_content = self.create_test_kml_file_content()
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False) as tmp_file:
+                tmp_file.write(kml_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Test upload without auth
+                with open(tmp_file_path, 'rb') as kml_file:
+                    files = {'file': ('test.kml', kml_file, 'application/vnd.google-earth.kml+xml')}
+                    upload_response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        files=files,
+                        timeout=30
+                    )
+                
+                # Test delete without auth
+                delete_response = requests.delete(
+                    f"{self.base_url}/admin/kml/test-id",
+                    timeout=10
+                )
+                
+                upload_auth_ok = upload_response.status_code in [401, 403]
+                delete_auth_ok = delete_response.status_code in [401, 403]
+                
+                if upload_auth_ok and delete_auth_ok:
+                    self.log_test("KML Unauthorized Access", True, 
+                                "KML admin endpoints correctly require authentication")
+                    return True
+                else:
+                    self.log_test("KML Unauthorized Access", False, 
+                                f"Auth check failed - Upload: {upload_response.status_code}, Delete: {delete_response.status_code}")
+                    return False
+                    
+            finally:
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            self.log_test("KML Unauthorized Access", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_kml_user_cannot_access_admin_endpoints(self):
+        """Test that regular users cannot access KML admin endpoints"""
+        try:
+            # Create a regular user
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("KML User Admin Access", False, "Failed to create test user")
+                return False
+            
+            # Login as regular user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("KML User Admin Access", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Test upload as user (should fail)
+            import tempfile
+            import os
+            
+            kml_content = self.create_test_kml_file_content()
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False) as tmp_file:
+                tmp_file.write(kml_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                with open(tmp_file_path, 'rb') as kml_file:
+                    files = {'file': ('test.kml', kml_file, 'application/vnd.google-earth.kml+xml')}
+                    upload_response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=user_headers,
+                        files=files,
+                        timeout=30
+                    )
+                
+                # Test delete as user (should fail)
+                delete_response = requests.delete(
+                    f"{self.base_url}/admin/kml/test-id",
+                    headers=user_headers,
+                    timeout=10
+                )
+                
+                upload_forbidden = upload_response.status_code == 403
+                delete_forbidden = delete_response.status_code == 403
+                
+                if upload_forbidden and delete_forbidden:
+                    self.log_test("KML User Admin Access", True, 
+                                "Regular user correctly blocked from KML admin endpoints")
+                    
+                    # Cleanup - delete test user
+                    users_response = requests.get(
+                        f"{self.base_url}/admin/all-users",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    users = users_response.json()
+                    test_user = next((u for u in users if u.get("username") == username), None)
+                    if test_user:
+                        requests.delete(
+                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                    
+                    return True
+                else:
+                    self.log_test("KML User Admin Access", False, 
+                                f"User should be blocked - Upload: {upload_response.status_code}, Delete: {delete_response.status_code}")
+                    return False
+                    
+            finally:
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            self.log_test("KML User Admin Access", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
-        """Run all new feature tests"""
+        """Run all backend tests including new KML functionality"""
         print("=" * 80)
-        print("BACKEND API TESTING - NEW FEATURES")
+        print("BACKEND API TESTING - NEW KML FUNCTIONALITY")
         print("=" * 80)
         print(f"Testing against: {self.base_url}")
-        print("Testing newly implemented features:")
-        print("1. Fixed Registration Flow (PENDING status)")
-        print("2. New Report Endpoints (timeline, distribution, performance)")
-        print("3. Admin Delete Pendency Endpoint")
-        print("4. Authentication verification")
+        print("Testing newly requested features:")
+        print("1. KML Upload and Management (NEW)")
+        print("2. Admin Delete Pendency (re-test)")
+        print("3. Export/Report Endpoints (re-test)")
+        print("4. Authentication and Authorization")
         print()
         
         # Step 1: Login as admin
@@ -1416,25 +1858,38 @@ class BackendTester:
         
         print()
         
-        # Test 1: Registration Flow with PENDING status
-        print("🔍 Testing Registration Flow...")
-        test_username, test_password, pending_token = self.test_register_pending_status()
+        # Test 1: KML Functionality (NEW)
+        print("🗺️ Testing KML Functionality...")
+        kml_id = self.test_admin_upload_kml()
+        print()
+        self.test_admin_upload_invalid_kml()
+        print()
+        self.test_admin_upload_non_kml_file()
+        print()
+        self.test_get_kml_locations_as_admin()
+        print()
+        self.test_get_kml_locations_as_user()
+        print()
+        self.test_kml_unauthorized_access()
+        print()
+        self.test_kml_user_cannot_access_admin_endpoints()
         print()
         
-        if test_username:
-            # Test login with PENDING user
-            print("🔍 Testing Login with PENDING User...")
-            self.test_login_pending_user(test_username, test_password)
+        # Test KML deletion (if we have a valid KML ID)
+        if kml_id:
+            print("🗑️ Testing KML Deletion...")
+            self.test_admin_delete_kml(kml_id)
             print()
-            
-            # Test if registration token can access endpoints
-            if pending_token:
-                print("🔍 Testing PENDING User Token Access...")
-                self.test_pending_user_token_access(pending_token)
-                print()
         
-        # Test 2: New Report Endpoints
-        print("🔍 Testing Report Endpoints...")
+        # Test 2: Admin Delete Pendencia (re-test)
+        print("🗑️ Testing Admin Delete Pendencia...")
+        self.test_admin_delete_pendencia()
+        print()
+        self.test_admin_delete_finished_pendencia()
+        print()
+        
+        # Test 3: Export/Report Endpoints (re-test)
+        print("📊 Testing Export/Report Endpoints...")
         self.test_reports_timeline()
         print()
         self.test_reports_distribution()
@@ -1442,38 +1897,10 @@ class BackendTester:
         self.test_reports_performance()
         print()
         
-        # Test 3: Admin Delete Pendencia
-        print("🔍 Testing Admin Delete Pendencia...")
-        self.test_admin_delete_pendencia()
-        print()
-        self.test_admin_delete_finished_pendencia()
-        print()
-        
         # Test 4: Authentication Requirements
-        print("🔍 Testing Authentication Requirements...")
+        print("🔐 Testing Authentication Requirements...")
         self.test_authentication_required()
         print()
-        
-        # Cleanup: Delete test user if created
-        if test_username:
-            try:
-                users_response = requests.get(
-                    f"{self.base_url}/admin/all-users",
-                    headers=self.get_auth_headers(),
-                    timeout=10
-                )
-                if users_response.status_code == 200:
-                    users = users_response.json()
-                    test_user = next((u for u in users if u.get("username") == test_username), None)
-                    if test_user:
-                        requests.delete(
-                            f"{self.base_url}/admin/delete-user/{test_user['id']}",
-                            headers=self.get_auth_headers(),
-                            timeout=10
-                        )
-                        print(f"🧹 Cleaned up test user: {test_username}")
-            except:
-                pass
         
         print("=" * 80)
         print("TEST SUMMARY")
