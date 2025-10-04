@@ -23,6 +23,7 @@ import {
   Edit3,
   Trash2
 } from 'lucide-react';
+import { ThemeToggle } from './ui/theme-toggle';
 import { Alert, AlertDescription } from './ui/alert';
 import FinalizeModal from './FinalizeModal';
 import EditModal from './EditModal';
