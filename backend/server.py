@@ -814,6 +814,348 @@ async def export_pendencias(
             filename="pendencias.xlsx"
         )
 
+# Novos endpoints avançados para relatórios
+@api_router.post("/reports/dashboard-stats")
+async def get_dashboard_stats(filters: ReportFilter, current_user: User = Depends(get_current_user)):
+    """Retorna estatísticas completas do dashboard com filtros avançados"""
+    from datetime import datetime, timezone
+    
+    # Construir query base
+    query = {}
+    
+    # Filtros de data
+    if filters.start_date or filters.end_date:
+        date_filter = {}
+        if filters.start_date:
+            start = datetime.fromisoformat(filters.start_date).replace(tzinfo=timezone.utc)
+            date_filter["$gte"] = start
+        if filters.end_date:
+            end = datetime.fromisoformat(filters.end_date).replace(tzinfo=timezone.utc)
+            date_filter["$lte"] = end
+        query["created_at"] = date_filter
+    
+    # Outros filtros
+    if filters.site:
+        query["site"] = filters.site
+    if filters.tipo:
+        query["tipo"] = filters.tipo
+    if filters.subtipo:
+        query["subtipo"] = filters.subtipo
+    if filters.status:
+        query["status"] = filters.status
+    if filters.validation_status:
+        query["validation_status"] = filters.validation_status
+    if filters.usuario_criacao:
+        query["usuario_criacao"] = filters.usuario_criacao
+    if filters.usuario_finalizacao:
+        query["usuario_finalizacao"] = filters.usuario_finalizacao
+
+    # Se não for admin, filtrar apenas suas próprias pendências
+    if current_user.role != "ADMIN":
+        query["usuario_criacao"] = current_user.username
+
+    # Executar agregações
+    pipeline = [
+        {"$match": query},
+        {"$facet": {
+            "total": [{"$count": "count"}],
+            "por_status": [
+                {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+            ],
+            "por_validation_status": [
+                {"$match": {"validation_status": {"$exists": True}}},
+                {"$group": {"_id": "$validation_status", "count": {"$sum": 1}}}
+            ],
+            "por_tipo": [
+                {"$group": {"_id": "$tipo", "count": {"$sum": 1}}}
+            ],
+            "por_site": [
+                {"$group": {"_id": "$site", "count": {"$sum": 1}}}
+            ],
+            "por_mes": [
+                {"$group": {
+                    "_id": {
+                        "year": {"$year": "$created_at"},
+                        "month": {"$month": "$created_at"}
+                    },
+                    "count": {"$sum": 1}
+                }}
+            ]
+        }}
+    ]
+    
+    result = await db.pendencias.aggregate(pipeline).to_list(1)
+    data = result[0] if result else {}
+    
+    # Processar resultados
+    total_pendencias = data.get("total", [{}])[0].get("count", 0)
+    
+    status_counts = {item["_id"]: item["count"] for item in data.get("por_status", [])}
+    validation_counts = {item["_id"]: item["count"] for item in data.get("por_validation_status", [])}
+    
+    pendencias_abertas = status_counts.get("Pendente", 0)
+    pendencias_finalizadas = status_counts.get("Finalizado", 0)
+    pendencias_validadas = validation_counts.get("APPROVED", 0)
+    pendencias_rejeitadas = validation_counts.get("REJECTED", 0)
+    
+    # Taxa de finalização
+    taxa_finalizacao = (pendencias_finalizadas / total_pendencias * 100) if total_pendencias > 0 else 0
+    
+    # Contar usuários ativos
+    usuarios_ativos = len(await db.users.find({"status": "APPROVED"}).distinct("username"))
+    
+    return DashboardStats(
+        total_pendencias=total_pendencias,
+        pendencias_abertas=pendencias_abertas,
+        pendencias_finalizadas=pendencias_finalizadas,
+        pendencias_validadas=pendencias_validadas,
+        pendencias_rejeitadas=pendencias_rejeitadas,
+        pendencias_por_tipo={item["_id"]: item["count"] for item in data.get("por_tipo", [])},
+        pendencias_por_site={item["_id"]: item["count"] for item in data.get("por_site", [])},
+        pendencias_por_mes={f"{item['_id']['month']}/{item['_id']['year']}": item["count"] for item in data.get("por_mes", [])},
+        usuarios_ativos=usuarios_ativos,
+        taxa_finalizacao=round(taxa_finalizacao, 2)
+    )
+
+@api_router.post("/reports/export-advanced")
+async def export_pendencias_advanced(
+    filters: ReportFilter,
+    export_config: ExportFormat,
+    current_user: User = Depends(get_current_user)
+):
+    """Exportação avançada com múltiplos formatos e opções"""
+    from datetime import datetime, timezone
+    import json
+    
+    # Construir query (mesmo código do dashboard)
+    query = {}
+    
+    if filters.start_date or filters.end_date:
+        date_filter = {}
+        if filters.start_date:
+            start = datetime.fromisoformat(filters.start_date).replace(tzinfo=timezone.utc)
+            date_filter["$gte"] = start
+        if filters.end_date:
+            end = datetime.fromisoformat(filters.end_date).replace(tzinfo=timezone.utc)
+            date_filter["$lte"] = end
+        query["created_at"] = date_filter
+    
+    if filters.site:
+        query["site"] = filters.site
+    if filters.tipo:
+        query["tipo"] = filters.tipo
+    if filters.subtipo:
+        query["subtipo"] = filters.subtipo
+    if filters.status:
+        query["status"] = filters.status
+    if filters.validation_status:
+        query["validation_status"] = filters.validation_status
+    if filters.usuario_criacao:
+        query["usuario_criacao"] = filters.usuario_criacao
+    if filters.usuario_finalizacao:
+        query["usuario_finalizacao"] = filters.usuario_finalizacao
+    
+    # Verificar permissões
+    if current_user.role != "ADMIN":
+        query["usuario_criacao"] = current_user.username
+    
+    # Buscar dados
+    pendencias = await db.pendencias.find(query).sort("created_at", -1).to_list(2000)
+    
+    if export_config.format == "excel":
+        return await _export_to_excel_advanced(pendencias, export_config, filters)
+    else:
+        raise HTTPException(status_code=400, detail="Formato não suportado ainda")
+
+async def _export_to_excel_advanced(pendencias, export_config: ExportFormat, filters: ReportFilter):
+    """Exportação avançada para Excel com formatação melhorada"""
+    from datetime import datetime
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Relatório de Pendências"
+    
+    # Cabeçalho do relatório
+    ws.merge_cells("A1:M1")
+    title_cell = ws["A1"]
+    title_cell.value = "RELATÓRIO DE PENDÊNCIAS"
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.fill = PatternFill(start_color="2E4A88", end_color="2E4A88", fill_type="solid")
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Informações do filtro
+    row = 3
+    ws[f"A{row}"] = "Período:"
+    ws[f"B{row}"] = f"De {filters.start_date or 'Início'} até {filters.end_date or 'Hoje'}"
+    row += 1
+    
+    if filters.site:
+        ws[f"A{row}"] = "Site:"
+        ws[f"B{row}"] = filters.site
+        row += 1
+    
+    if filters.tipo:
+        ws[f"A{row}"] = "Tipo:"
+        ws[f"B{row}"] = filters.tipo
+        row += 1
+    
+    ws[f"A{row}"] = f"Total de registros: {len(pendencias)}"
+    ws[f"A{row}"].font = Font(bold=True)
+    row += 2
+    
+    # Headers das colunas
+    headers = [
+        "ID", "Site", "Data/Hora Criação", "Tipo", "Subtipo", 
+        "Observações", "Status", "Usuário Criação", 
+        "Usuário Finalização", "Data Finalização", 
+        "Informações Fechamento", "Status Validação", "Validado Por"
+    ]
+    
+    # Style headers
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F6D8E", end_color="4F6D8E", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+    
+    # Dados das pendências
+    row += 1
+    for pendencia in pendencias:
+        ws.cell(row=row, column=1, value=pendencia["id"][:8])  # ID abreviado
+        ws.cell(row=row, column=2, value=pendencia["site"])
+        ws.cell(row=row, column=3, value=pendencia["data_hora"].strftime("%d/%m/%Y %H:%M") if pendencia.get("data_hora") else "")
+        ws.cell(row=row, column=4, value=pendencia["tipo"])
+        ws.cell(row=row, column=5, value=pendencia["subtipo"])
+        ws.cell(row=row, column=6, value=pendencia["observacoes"][:50] + "..." if len(pendencia["observacoes"]) > 50 else pendencia["observacoes"])
+        
+        # Colorir status
+        status_cell = ws.cell(row=row, column=7, value=pendencia["status"])
+        if pendencia["status"] == "Pendente":
+            status_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+        elif pendencia["status"] == "Finalizado":
+            status_cell.fill = PatternFill(start_color="D5E8D4", end_color="D5E8D4", fill_type="solid")
+        
+        ws.cell(row=row, column=8, value=pendencia["usuario_criacao"])
+        ws.cell(row=row, column=9, value=pendencia.get("usuario_finalizacao", ""))
+        ws.cell(row=row, column=10, value=pendencia["data_finalizacao"].strftime("%d/%m/%Y %H:%M") if pendencia.get("data_finalizacao") else "")
+        ws.cell(row=row, column=11, value=pendencia.get("informacoes_fechamento", "")[:50] + "..." if pendencia.get("informacoes_fechamento") and len(pendencia.get("informacoes_fechamento", "")) > 50 else pendencia.get("informacoes_fechamento", ""))
+        
+        # Status de validação colorido
+        validation_cell = ws.cell(row=row, column=12, value=pendencia.get("validation_status", "N/A"))
+        if pendencia.get("validation_status") == "APPROVED":
+            validation_cell.fill = PatternFill(start_color="D5E8D4", end_color="D5E8D4", fill_type="solid")
+        elif pendencia.get("validation_status") == "REJECTED":
+            validation_cell.fill = PatternFill(start_color="F8CECC", end_color="F8CECC", fill_type="solid")
+            
+        ws.cell(row=row, column=13, value=pendencia.get("validated_by", ""))
+        
+        row += 1
+    
+    # Auto-ajustar largura das colunas
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 30)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salvar arquivo
+    filename = f"relatorio_pendencias_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    with NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+        wb.save(tmp.name)
+        return FileResponse(
+            tmp.name,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=filename
+        )
+
+@api_router.get("/reports/performance-metrics")
+async def get_performance_metrics(
+    days: int = 30,
+    admin_user: User = Depends(get_admin_user)
+):
+    """Métricas de performance dos últimos N dias"""
+    from datetime import datetime, timezone, timedelta
+    
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    pipeline = [
+        {"$match": {"created_at": {"$gte": start_date}}},
+        {"$facet": {
+            "tempo_medio_finalizacao": [
+                {"$match": {"status": "Finalizado", "data_finalizacao": {"$exists": True}}},
+                {"$project": {
+                    "tempo_resolucao": {
+                        "$divide": [
+                            {"$subtract": ["$data_finalizacao", "$created_at"]},
+                            1000 * 60 * 60  # converter para horas
+                        ]
+                    }
+                }},
+                {"$group": {
+                    "_id": None,
+                    "tempo_medio": {"$avg": "$tempo_resolucao"},
+                    "tempo_min": {"$min": "$tempo_resolucao"},
+                    "tempo_max": {"$max": "$tempo_resolucao"}
+                }}
+            ],
+            "pendencias_por_dia": [
+                {"$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$created_at"
+                        }
+                    },
+                    "criadas": {"$sum": 1},
+                    "finalizadas": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$status", "Finalizado"]}, 1, 0]
+                        }
+                    }
+                }},
+                {"$sort": {"_id": 1}}
+            ],
+            "usuarios_mais_ativos": [
+                {"$group": {
+                    "_id": "$usuario_criacao",
+                    "total_criadas": {"$sum": 1},
+                    "finalizadas": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$status", "Finalizado"]}, 1, 0]
+                        }
+                    }
+                }},
+                {"$sort": {"total_criadas": -1}},
+                {"$limit": 10}
+            ]
+        }}
+    ]
+    
+    result = await db.pendencias.aggregate(pipeline).to_list(1)
+    data = result[0] if result else {}
+    
+    # Processar tempo médio
+    tempo_stats = data.get("tempo_medio_finalizacao", [{}])[0]
+    
+    return {
+        "periodo_dias": days,
+        "tempo_medio_finalizacao_horas": round(tempo_stats.get("tempo_medio", 0), 2),
+        "tempo_min_finalizacao_horas": round(tempo_stats.get("tempo_min", 0), 2),
+        "tempo_max_finalizacao_horas": round(tempo_stats.get("tempo_max", 0), 2),
+        "pendencias_por_dia": data.get("pendencias_por_dia", []),
+        "usuarios_mais_ativos": data.get("usuarios_mais_ativos", [])
+    }
+
 
 # Include the router in the main app
 app.include_router(api_router)
