@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for Admin User Management Endpoints
-Tests the admin user management functionality including:
-- GET /api/admin/all-users
-- DELETE /api/admin/delete-user/{user_id}
-- PUT /api/admin/reset-password/{user_id}
+Backend API Testing Script for New Features
+Tests the newly implemented functionality including:
+- GET /api/stats/monthly (Monthly Statistics with validation filter)
+- GET /api/admin/form-config (Form Configuration)
+- PUT /api/admin/form-config (Update Form Configuration)
+- PUT /api/user/change-password (User Password Change)
+- GET /api/user/stats (Individual User Statistics)
 """
 
 import requests
