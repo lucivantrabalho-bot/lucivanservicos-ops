@@ -473,7 +473,7 @@ async def export_pendencias(
     site: Optional[str] = None,
     tipo: Optional[str] = None,
     status: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+    admin_user: User = Depends(get_admin_user)
 ):
     # Build query
     query = {}
