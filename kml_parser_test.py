@@ -532,35 +532,37 @@ class KMLParserTester:
             temp_file.write("This is not a KML file")
             temp_file.close()
             
-            with open(temp_file.name, 'rb') as f:
-                files = {'file': (os.path.basename(temp_file.name), f, 'text/plain')}
-                response = requests.post(
-                    f"{self.base_url}/admin/upload-kml",
-                    headers=self.get_auth_headers(),
-                    files=files,
-                    timeout=30
-                )
-            
-            # Clean up
-            os.unlink(temp_file.name)
-            
-            if response and response.status_code == 400:
-                error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"detail": response.text}
-                if "kml" in error_data.get("detail", "").lower():
-                    self.log_test("Non-KML File Extension", True, 
-                                "Correctly rejected non-KML file",
-                                f"Error: {error_data.get('detail')}")
-                    return True
+            try:
+                with open(temp_file.name, 'rb') as f:
+                    files = {'file': (os.path.basename(temp_file.name), f, 'text/plain')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response and response.status_code == 400:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"detail": response.text}
+                    if "kml" in error_data.get("detail", "").lower():
+                        self.log_test("Non-KML File Extension", True, 
+                                    "Correctly rejected non-KML file",
+                                    f"Error: {error_data.get('detail')}")
+                        return True
+                    else:
+                        self.log_test("Non-KML File Extension", False, 
+                                    "Rejected but with unexpected error message", error_data)
+                        return False
                 else:
+                    error_msg = response.text if response else "No response"
+                    status_code = response.status_code if response else "No status"
                     self.log_test("Non-KML File Extension", False, 
-                                "Rejected but with unexpected error message", error_data)
+                                f"Should have rejected non-KML file but got: {status_code}", error_msg)
                     return False
-            else:
-                error_msg = response.text if response else "No response"
-                status_code = response.status_code if response else "No status"
-                self.log_test("Non-KML File Extension", False, 
-                            f"Should have rejected non-KML file but got: {status_code}", error_msg)
-                return False
+            finally:
+                # Clean up
+                if os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
                 
         except Exception as e:
             self.log_test("Non-KML File Extension", False, f"Test failed with exception: {str(e)}")
