@@ -149,6 +149,9 @@
         - working: true
           agent: "testing"
           comment: "TESTED: Successfully resets password with valid password (≥4 characters). Correctly rejects passwords with <4 characters (returns 400 error). Validation working as expected."
+        - working: true
+          agent: "testing"
+          comment: "COMPREHENSIVE BUG INVESTIGATION COMPLETED: Investigated reported bug where users could login with old password after admin reset. Created comprehensive test suite including database-level verification. FINDINGS: Password reset functionality working correctly - password hash is properly updated in database, new password works, old password is correctly rejected. Bug NOT reproduced. Tested with both new users and existing users. All 18 tests passed (100% success rate)."
 
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
