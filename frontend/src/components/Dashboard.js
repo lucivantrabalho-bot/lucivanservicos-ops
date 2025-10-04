@@ -352,81 +352,14 @@ export default function Dashboard() {
         {/* Dashboard Charts */}
         <DashboardCharts />
 
-        {/* Filters */}
-        <Card className="glass mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Filter className="w-5 h-5 mr-2" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Buscar..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="pl-10"
-                  data-testid="search-input"
-                />
-              </div>
-              
-              {/* Site Filter */}
-              <Select value={filters.site} onValueChange={(value) => setFilters(prev => ({ ...prev, site: value === 'all' ? '' : value }))}>
-                <SelectTrigger data-testid="site-filter">
-                  <SelectValue placeholder="Todos os sites" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os sites</SelectItem>
-                  {sites.map(site => (
-                    <SelectItem key={site} value={site}>{site}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Tipo Filter */}
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value === 'all' ? '' : value }))}>
-                <SelectTrigger data-testid="tipo-filter">
-                  <SelectValue placeholder="Todos os tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="Energia">Energia</SelectItem>
-                  <SelectItem value="Arcon">Arcon</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {/* Status Filter */}
-              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}>
-                <SelectTrigger data-testid="status-filter">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Finalizado">Finalizado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {isAdmin && (
-              <div className="flex justify-end mt-4">
-                <Button
-                  onClick={handleExport}
-                  variant="outline"
-                  data-testid="export-btn"
-                  className="btn-hover"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar Excel
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Advanced Filters */}
+        <AdvancedFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          sites={sites}
+          onExport={handleExportAdvanced}
+          loading={loading}
+        />
 
         {/* Pendências List */}
         <div className="space-y-4">
