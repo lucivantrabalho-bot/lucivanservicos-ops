@@ -157,6 +157,10 @@ class ExportFormat(BaseModel):
     include_photos: bool = False
     group_by: Optional[str] = None  # "site", "tipo", "usuario", etc.
 
+class ExportRequest(BaseModel):
+    filters: ReportFilter
+    export_config: ExportFormat
+
 
 # Auth helpers
 def verify_password(plain_password, hashed_password):
