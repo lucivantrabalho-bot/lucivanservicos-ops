@@ -105,6 +105,17 @@ class PendenciaValidation(BaseModel):
     status: str  # "APPROVED" or "REJECTED" 
     validation_notes: Optional[str] = None
 
+class PasswordReset(BaseModel):
+    new_password: str
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+class FormConfig(BaseModel):
+    energia_options: List[str]
+    arcon_options: List[str]
+
 class PendenciaEdit(BaseModel):
     site: str
     tipo: str
