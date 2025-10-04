@@ -229,6 +229,42 @@
           agent: "main"
           comment: "TESTADO: Nova aba funcionando corretamente, exibe lista de usuários com badges apropriados (Admin/Usuário, status), botões funcionais. Interface responsiva e intuitiva."
 
+  - task: "Perfil do Usuário - Componente completo"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/UserProfile.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "IMPLEMENTADO E TESTADO: Novo componente de perfil com 3 abas - Informações (dados da conta), Alterar Senha (formulário com validações), Estatísticas (métricas mensais individuais). Interface limpa e funcional. Botão Perfil adicionado ao Dashboard."
+
+  - task: "Admin Configurar Formulário Nova Pendência"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/AdminPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "IMPLEMENTADO E TESTADO: Nova aba 'Configurar Formulário' no painel admin. Interface completa para adicionar/remover opções de Energia e Arcon. Funcionalidade de adicionar item testada com sucesso - item 'Teste Item Energia' apareceu na lista. Layout em grid 3 colunas com botões de remoção."
+
+  - task: "CreatePendencia - Opções dinâmicas"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/CreatePendencia.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "IMPLEMENTADO: Removidas opções hardcoded, adicionado carregamento dinâmico via API /admin/form-config. Formulário agora usa configurações gerenciáveis pelo admin. Fallback para opções padrão em caso de erro da API."
+
   - task: "Modal de Reset de Senha"
     implemented: true
     working: true
