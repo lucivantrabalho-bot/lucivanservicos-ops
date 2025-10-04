@@ -4,7 +4,7 @@ import { testConnection } from '../utils/connectionTest';
 
 const AuthContext = createContext();
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+const API_BASE = process.env.REACT_APP_BACKEND_URL ? process.env.REACT_APP_BACKEND_URL + '/api' : '/api';
 
 // Debug logging
 console.log('[AuthContext] Environment variables:');
