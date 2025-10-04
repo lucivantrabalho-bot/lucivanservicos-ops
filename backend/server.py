@@ -174,7 +174,7 @@ def to_brasilia_time(utc_dt: datetime) -> datetime:
 
 
 # Routes
-@api_router.post("/register", response_model=Token)
+@api_router.post("/register")
 async def register(user_data: UserCreate):
     # Check if user already exists
     existing_user = await db.users.find_one({"username": user_data.username})
@@ -184,27 +184,24 @@ async def register(user_data: UserCreate):
             detail="Username already registered"
         )
     
+    # Check if this is the first user (make them admin)
+    user_count = await db.users.count_documents({})
+    
     # Create new user
     hashed_password = get_password_hash(user_data.password)
     user = User(
         username=user_data.username,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        role="ADMIN" if user_count == 0 else "USER",
+        status="APPROVED" if user_count == 0 else "PENDING"
     )
     
     await db.users.insert_one(user.dict())
     
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        user_id=user.id,
-        username=user.username
-    )
+    return {
+        "message": "User registered successfully. Awaiting admin approval." if user_count > 0 else "Admin user created successfully.",
+        "status": "approved" if user_count == 0 else "pending"
+    }
 
 @api_router.post("/login", response_model=Token)
 async def login(user_data: UserLogin):
