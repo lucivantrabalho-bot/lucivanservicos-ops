@@ -278,7 +278,7 @@ async def export_pendencias(
     headers = [
         "ID", "Site", "Data/Hora", "Tipo", "Subtipo", 
         "Observações", "Status", "Usuário Criação", 
-        "Usuário Finalização", "Data Finalização"
+        "Usuário Finalização", "Data Finalização", "Informações Fechamento", "Foto Fechamento"
     ]
     
     # Style headers
