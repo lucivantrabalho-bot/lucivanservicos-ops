@@ -1159,24 +1159,20 @@ class BackendTester:
             self.log_test("Dashboard Stats (User Permissions)", False, f"Request failed: {str(e)}")
             return False
 
-    def test_export_advanced_excel(self):
-        """Test POST /api/reports/export-advanced with Excel format"""
+    def test_export_advanced_new_structure(self):
+        """Test POST /api/reports/export-advanced with NEW ExportRequest structure (CORRECTED)"""
         try:
-            # Test filters
-            filters = {
-                "start_date": "2024-01-01",
-                "end_date": "2024-12-31",
-                "status": "Finalizado"
+            # NEW STRUCTURE: Use ExportRequest model with filters and export_config
+            request_body = {
+                "filters": {
+                    "start_date": "2024-01-01",
+                    "end_date": "2024-12-31"
+                },
+                "export_config": {
+                    "format": "excel",
+                    "include_photos": False
+                }
             }
-            
-            # Export configuration
-            export_config = {
-                "format": "excel",
-                "include_photos": False
-            }
-            
-            # Combine filters and export config in request body
-            request_body = {**filters, **export_config}
             
             response = requests.post(
                 f"{self.base_url}/reports/export-advanced",
@@ -1190,21 +1186,66 @@ class BackendTester:
                 content_type = response.headers.get('content-type', '')
                 if 'spreadsheet' in content_type or 'excel' in content_type:
                     file_size = len(response.content)
-                    self.log_test("Export Advanced (Excel)", True, 
-                                f"Successfully generated Excel export", 
+                    self.log_test("Export Advanced (NEW ExportRequest Structure - CORRECTED)", True, 
+                                f"✅ ExportRequest model working - Excel export generated", 
                                 f"File size: {file_size} bytes, Content-Type: {content_type}")
                     return True
                 else:
-                    self.log_test("Export Advanced (Excel)", False, 
+                    self.log_test("Export Advanced (NEW ExportRequest Structure - CORRECTED)", False, 
                                 f"Expected Excel file but got content-type: {content_type}")
                     return False
             else:
-                self.log_test("Export Advanced (Excel)", False, 
+                self.log_test("Export Advanced (NEW ExportRequest Structure - CORRECTED)", False, 
+                            f"❌ ExportRequest model NOT working - Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Export Advanced (NEW ExportRequest Structure - CORRECTED)", False, f"❌ ExportRequest model NOT working - Request failed: {str(e)}")
+            return False
+
+    def test_export_advanced_with_different_filters(self):
+        """Test POST /api/reports/export-advanced with different filters using NEW structure (CORRECTED)"""
+        try:
+            # Test with multiple filters using NEW ExportRequest structure
+            request_body = {
+                "filters": {
+                    "start_date": "2024-10-01",
+                    "end_date": "2024-10-31",
+                    "site": "Site A",
+                    "tipo": "Energia"
+                },
+                "export_config": {
+                    "format": "excel",
+                    "include_photos": False,
+                    "group_by": "site"
+                }
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/reports/export-advanced",
+                headers=self.get_auth_headers(),
+                json=request_body,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'spreadsheet' in content_type or 'excel' in content_type:
+                    self.log_test("Export Advanced (Different Filters - CORRECTED)", True, 
+                                f"✅ Works with different filters using NEW structure", 
+                                f"Filters: site={request_body['filters'].get('site')}, tipo={request_body['filters'].get('tipo')}")
+                    return True
+                else:
+                    self.log_test("Export Advanced (Different Filters - CORRECTED)", False, 
+                                f"Expected Excel file but got content-type: {content_type}")
+                    return False
+            else:
+                self.log_test("Export Advanced (Different Filters - CORRECTED)", False, 
                             f"Request failed with status {response.status_code}", response.text)
                 return False
                 
         except Exception as e:
-            self.log_test("Export Advanced (Excel)", False, f"Request failed: {str(e)}")
+            self.log_test("Export Advanced (Different Filters - CORRECTED)", False, f"Request failed: {str(e)}")
             return False
 
     def test_export_advanced_with_filters(self):
