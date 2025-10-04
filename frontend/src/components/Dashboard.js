@@ -442,12 +442,42 @@ export default function Dashboard() {
                           size="sm"
                           onClick={() => {
                             const newWindow = window.open();
-                            newWindow.document.write(`<img src="data:image/jpeg;base64,${pendencia.foto_base64}" style="max-width: 100%; height: auto;" />`);
+                            newWindow.document.write(`
+                              <html>
+                                <head><title>Foto da Pendência</title></head>
+                                <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5;">
+                                  <img src="data:image/jpeg;base64,${pendencia.foto_base64}" style="max-width: 90%; max-height: 90%; object-fit: contain;" />
+                                </body>
+                              </html>
+                            `);
                           }}
                           data-testid="view-photo-btn"
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          Ver Foto
+                          Ver Foto Abertura
+                        </Button>
+                      )}
+                      
+                      {pendencia.foto_fechamento_base64 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newWindow = window.open();
+                            newWindow.document.write(`
+                              <html>
+                                <head><title>Foto do Fechamento</title></head>
+                                <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5;">
+                                  <img src="data:image/jpeg;base64,${pendencia.foto_fechamento_base64}" style="max-width: 90%; max-height: 90%; object-fit: contain;" />
+                                </body>
+                              </html>
+                            `);
+                          }}
+                          data-testid="view-close-photo-btn"
+                          className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Ver Foto Fechamento
                         </Button>
                       )}
                       
