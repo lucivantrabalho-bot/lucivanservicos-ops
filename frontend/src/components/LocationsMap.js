@@ -341,13 +341,24 @@ export default function LocationsMap() {
                     </div>
                   </div>
                   
-                  <Button 
-                    onClick={() => openInMaps(location.latitude, location.longitude, location.name)}
-                    className="w-full btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Abrir no Google Maps
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={() => openInMaps(location.latitude, location.longitude, location.name)}
+                      className="w-full btn-hover bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Abrir no Google Maps
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => openObservationModal(location)}
+                      variant="outline"
+                      className="w-full btn-hover border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Observações
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
