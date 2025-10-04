@@ -59,6 +59,11 @@ export default function AdminPanel() {
   const [newEnergiaItem, setNewEnergiaItem] = useState('');
   const [newArconItem, setNewArconItem] = useState('');
 
+  // Estados para KML
+  const [kmlLocations, setKmlLocations] = useState([]);
+  const [kmlUploading, setKmlUploading] = useState(false);
+  const [kmlFile, setKmlFile] = useState(null);
+
   // Redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
