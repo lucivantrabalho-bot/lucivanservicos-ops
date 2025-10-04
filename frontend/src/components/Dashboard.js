@@ -68,7 +68,10 @@ export default function Dashboard() {
     site: '',
     tipo: '',
     status: '',
-    search: ''
+    search: '',
+    startDate: '',
+    endDate: '',
+    validation_status: ''
   });
 
   // Load data on mount
