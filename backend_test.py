@@ -976,6 +976,434 @@ class BackendTester:
             self.log_test("User Individual Stats", False, f"Request failed: {str(e)}")
             return False
 
+    def test_dashboard_stats_basic(self):
+        """Test POST /api/reports/dashboard-stats with basic filters"""
+        try:
+            # Test with minimal filters
+            filters = {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/reports/dashboard-stats",
+                headers=self.get_auth_headers(),
+                json=filters,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                stats = response.json()
+                required_fields = [
+                    "total_pendencias", "pendencias_abertas", "pendencias_finalizadas",
+                    "pendencias_validadas", "pendencias_rejeitadas", "pendencias_por_tipo",
+                    "pendencias_por_site", "pendencias_por_mes", "usuarios_ativos", "taxa_finalizacao"
+                ]
+                
+                if all(field in stats for field in required_fields):
+                    self.log_test("Dashboard Stats (Basic)", True, 
+                                f"Retrieved dashboard statistics", 
+                                f"Total: {stats.get('total_pendencias')}, Taxa finalização: {stats.get('taxa_finalizacao')}%")
+                    return True
+                else:
+                    missing_fields = [field for field in required_fields if field not in stats]
+                    self.log_test("Dashboard Stats (Basic)", False, 
+                                f"Missing required fields: {missing_fields}", stats)
+                    return False
+            else:
+                self.log_test("Dashboard Stats (Basic)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Dashboard Stats (Basic)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_dashboard_stats_with_filters(self):
+        """Test POST /api/reports/dashboard-stats with various filters"""
+        try:
+            # Test with multiple filters
+            filters = {
+                "start_date": "2024-10-01",
+                "end_date": "2024-10-31",
+                "status": "Finalizado",
+                "validation_status": "APPROVED"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/reports/dashboard-stats",
+                headers=self.get_auth_headers(),
+                json=filters,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                stats = response.json()
+                self.log_test("Dashboard Stats (Filtered)", True, 
+                            f"Retrieved filtered dashboard statistics", 
+                            f"Total: {stats.get('total_pendencias')}, Finalizadas: {stats.get('pendencias_finalizadas')}")
+                return True
+            else:
+                self.log_test("Dashboard Stats (Filtered)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Dashboard Stats (Filtered)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_dashboard_stats_user_permissions(self):
+        """Test dashboard stats with regular user (should only see own data)"""
+        try:
+            # Create a test user
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("Dashboard Stats (User Permissions)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("Dashboard Stats (User Permissions)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Test dashboard stats as regular user
+            filters = {"start_date": "2024-01-01", "end_date": "2024-12-31"}
+            response = requests.post(
+                f"{self.base_url}/reports/dashboard-stats",
+                headers=user_headers,
+                json=filters,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                stats = response.json()
+                self.log_test("Dashboard Stats (User Permissions)", True, 
+                            f"Regular user can access dashboard stats (filtered to own data)", 
+                            f"Total: {stats.get('total_pendencias')}")
+                
+                # Cleanup - delete test user
+                users_response = requests.get(
+                    f"{self.base_url}/admin/all-users",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                users = users_response.json()
+                test_user = next((u for u in users if u.get("username") == username), None)
+                if test_user:
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                
+                return True
+            else:
+                self.log_test("Dashboard Stats (User Permissions)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Dashboard Stats (User Permissions)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_export_advanced_excel(self):
+        """Test POST /api/reports/export-advanced with Excel format"""
+        try:
+            # Test filters
+            filters = {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "status": "Finalizado"
+            }
+            
+            # Export configuration
+            export_config = {
+                "format": "excel",
+                "include_photos": False
+            }
+            
+            # Combine filters and export config in request body
+            request_body = {**filters, **export_config}
+            
+            response = requests.post(
+                f"{self.base_url}/reports/export-advanced",
+                headers=self.get_auth_headers(),
+                json=request_body,
+                timeout=30  # Longer timeout for file generation
+            )
+            
+            if response.status_code == 200:
+                # Check if response is a file (Excel)
+                content_type = response.headers.get('content-type', '')
+                if 'spreadsheet' in content_type or 'excel' in content_type:
+                    file_size = len(response.content)
+                    self.log_test("Export Advanced (Excel)", True, 
+                                f"Successfully generated Excel export", 
+                                f"File size: {file_size} bytes, Content-Type: {content_type}")
+                    return True
+                else:
+                    self.log_test("Export Advanced (Excel)", False, 
+                                f"Expected Excel file but got content-type: {content_type}")
+                    return False
+            else:
+                self.log_test("Export Advanced (Excel)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Export Advanced (Excel)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_export_advanced_with_filters(self):
+        """Test POST /api/reports/export-advanced with various filters"""
+        try:
+            # Test with multiple filters
+            filters = {
+                "start_date": "2024-10-01",
+                "end_date": "2024-10-31",
+                "site": "Site A",
+                "tipo": "Energia"
+            }
+            
+            export_config = {
+                "format": "excel",
+                "include_photos": False,
+                "group_by": "site"
+            }
+            
+            request_body = {**filters, **export_config}
+            
+            response = requests.post(
+                f"{self.base_url}/reports/export-advanced",
+                headers=self.get_auth_headers(),
+                json=request_body,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'spreadsheet' in content_type or 'excel' in content_type:
+                    self.log_test("Export Advanced (Filtered)", True, 
+                                f"Successfully generated filtered Excel export", 
+                                f"Filters: site={filters.get('site')}, tipo={filters.get('tipo')}")
+                    return True
+                else:
+                    self.log_test("Export Advanced (Filtered)", False, 
+                                f"Expected Excel file but got content-type: {content_type}")
+                    return False
+            else:
+                self.log_test("Export Advanced (Filtered)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Export Advanced (Filtered)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_export_advanced_user_permissions(self):
+        """Test export advanced with regular user permissions"""
+        try:
+            # Create a test user
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("Export Advanced (User Permissions)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("Export Advanced (User Permissions)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Test export as regular user
+            filters = {"start_date": "2024-01-01", "end_date": "2024-12-31"}
+            export_config = {"format": "excel", "include_photos": False}
+            request_body = {**filters, **export_config}
+            
+            response = requests.post(
+                f"{self.base_url}/reports/export-advanced",
+                headers=user_headers,
+                json=request_body,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'spreadsheet' in content_type or 'excel' in content_type:
+                    self.log_test("Export Advanced (User Permissions)", True, 
+                                f"Regular user can export (filtered to own data)")
+                else:
+                    self.log_test("Export Advanced (User Permissions)", False, 
+                                f"Expected Excel file but got content-type: {content_type}")
+                
+                # Cleanup - delete test user
+                users_response = requests.get(
+                    f"{self.base_url}/admin/all-users",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                users = users_response.json()
+                test_user = next((u for u in users if u.get("username") == username), None)
+                if test_user:
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                
+                return response.status_code == 200
+            else:
+                self.log_test("Export Advanced (User Permissions)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Export Advanced (User Permissions)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_performance_metrics_30_days(self):
+        """Test GET /api/reports/performance-metrics with default 30 days"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/reports/performance-metrics",
+                headers=self.get_auth_headers(),
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                metrics = response.json()
+                required_fields = [
+                    "periodo_dias", "tempo_medio_finalizacao_horas", 
+                    "tempo_min_finalizacao_horas", "tempo_max_finalizacao_horas",
+                    "pendencias_por_dia", "usuarios_mais_ativos"
+                ]
+                
+                if all(field in metrics for field in required_fields):
+                    self.log_test("Performance Metrics (30 days)", True, 
+                                f"Retrieved performance metrics for {metrics.get('periodo_dias')} days", 
+                                f"Tempo médio: {metrics.get('tempo_medio_finalizacao_horas')}h, Usuários ativos: {len(metrics.get('usuarios_mais_ativos', []))}")
+                    return True
+                else:
+                    missing_fields = [field for field in required_fields if field not in metrics]
+                    self.log_test("Performance Metrics (30 days)", False, 
+                                f"Missing required fields: {missing_fields}", metrics)
+                    return False
+            else:
+                self.log_test("Performance Metrics (30 days)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Performance Metrics (30 days)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_performance_metrics_7_days(self):
+        """Test GET /api/reports/performance-metrics with 7 days parameter"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/reports/performance-metrics?days=7",
+                headers=self.get_auth_headers(),
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                metrics = response.json()
+                if metrics.get("periodo_dias") == 7:
+                    self.log_test("Performance Metrics (7 days)", True, 
+                                f"Retrieved 7-day performance metrics", 
+                                f"Tempo médio: {metrics.get('tempo_medio_finalizacao_horas')}h")
+                    return True
+                else:
+                    self.log_test("Performance Metrics (7 days)", False, 
+                                f"Expected 7 days but got {metrics.get('periodo_dias')}")
+                    return False
+            else:
+                self.log_test("Performance Metrics (7 days)", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Performance Metrics (7 days)", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_performance_metrics_admin_only(self):
+        """Test that performance metrics requires admin access"""
+        try:
+            # Create a test user
+            username, password = self.create_regular_user_for_testing()
+            if not username:
+                self.log_test("Performance Metrics (Admin Only)", False, "Failed to create test user")
+                return False
+            
+            # Login as the test user
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": username, "password": password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("Performance Metrics (Admin Only)", False, "Failed to login as test user")
+                return False
+            
+            user_token = login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Try to access performance metrics as regular user
+            response = requests.get(
+                f"{self.base_url}/reports/performance-metrics",
+                headers=user_headers,
+                timeout=15
+            )
+            
+            # Should be forbidden (403) for regular users
+            if response.status_code == 403:
+                self.log_test("Performance Metrics (Admin Only)", True, 
+                            "Correctly restricted access to admin users only")
+                success = True
+            else:
+                self.log_test("Performance Metrics (Admin Only)", False, 
+                            f"Expected 403 Forbidden but got {response.status_code}")
+                success = False
+            
+            # Cleanup - delete test user
+            users_response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            users = users_response.json()
+            test_user = next((u for u in users if u.get("username") == username), None)
+            if test_user:
+                requests.delete(
+                    f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+            
+            return success
+                
+        except Exception as e:
+            self.log_test("Performance Metrics (Admin Only)", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all new feature tests"""
         print("=" * 80)
