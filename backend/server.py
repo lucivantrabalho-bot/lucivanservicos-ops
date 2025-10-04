@@ -830,6 +830,112 @@ async def delete_kml_data(kml_id: str, admin_user: User = Depends(get_admin_user
     
     return {"message": "Dados KML excluídos com sucesso"}
 
+@api_router.get("/kml/search")
+async def search_kml_locations(
+    query: str,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Search KML locations by name or description - only return results for specific searches"""
+    if not query or len(query.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Query deve ter pelo menos 2 caracteres")
+    
+    query_lower = query.strip().lower()
+    
+    # Get all KML files
+    kml_files = await db.kml_data.find({"status": "active"}).to_list(length=None)
+    
+    matching_locations = []
+    for kml_file in kml_files:
+        for location in kml_file.get("locations", []):
+            # Search in name and description
+            name_match = query_lower in location.get("name", "").lower()
+            desc_match = query_lower in location.get("description", "").lower()
+            
+            if name_match or desc_match:
+                location_data = {
+                    "id": f"{kml_file['id']}_{len(matching_locations)}",
+                    "name": location.get("name"),
+                    "description": location.get("description"),
+                    "latitude": location.get("latitude"),
+                    "longitude": location.get("longitude"),
+                    "source_file": kml_file["filename"],
+                    "uploaded_by": kml_file["uploaded_by"]
+                }
+                matching_locations.append(location_data)
+                
+                if len(matching_locations) >= limit:
+                    break
+        
+        if len(matching_locations) >= limit:
+            break
+    
+    return {
+        "query": query,
+        "total_found": len(matching_locations),
+        "locations": matching_locations
+    }
+
+@api_router.post("/kml/locations/{location_id}/observations")
+async def add_location_observation(
+    location_id: str,
+    observation_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Add user observation to a specific location"""
+    observation_text = observation_data.get("observation", "").strip()
+    
+    if not observation_text:
+        raise HTTPException(status_code=400, detail="Observação não pode estar vazia")
+    
+    # Create observation record
+    observation = {
+        "id": str(uuid.uuid4()),
+        "location_id": location_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "observation": observation_text,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.location_observations.insert_one(observation)
+    
+    return {
+        "message": "Observação adicionada com sucesso",
+        "observation_id": observation["id"]
+    }
+
+@api_router.get("/kml/locations/{location_id}/observations")
+async def get_location_observations(
+    location_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all observations for a specific location"""
+    observations = await db.location_observations.find({
+        "location_id": location_id
+    }).sort("created_at", -1).to_list(length=None)
+    
+    return observations
+
+@api_router.delete("/kml/observations/{observation_id}")
+async def delete_observation(
+    observation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete user's own observation"""
+    observation = await db.location_observations.find_one({"id": observation_id})
+    
+    if not observation:
+        raise HTTPException(status_code=404, detail="Observação não encontrada")
+    
+    # Users can only delete their own observations, admins can delete any
+    if observation["user_id"] != current_user.id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Você só pode excluir suas próprias observações")
+    
+    await db.location_observations.delete_one({"id": observation_id})
+    
+    return {"message": "Observação excluída com sucesso"}
+
 # Endpoints para perfil do usuário
 @api_router.put("/user/change-password")
 async def change_user_password(password_change: PasswordChange, current_user: User = Depends(get_current_user)):
