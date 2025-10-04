@@ -202,8 +202,9 @@ export default function AdminPanel() {
         )}
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Usuários Pendentes ({pendingUsers.length})</TabsTrigger>
+            <TabsTrigger value="all-users">Usuários Cadastrados ({allUsers.length})</TabsTrigger>
             <TabsTrigger value="pendencias">Validar Pendências</TabsTrigger>
             <TabsTrigger value="stats">Estatísticas Mensais</TabsTrigger>
           </TabsList>
