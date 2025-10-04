@@ -2,7 +2,7 @@
  * Utilitários para testar conectividade com o backend
  */
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
+const API_BASE = process.env.REACT_APP_BACKEND_URL ? process.env.REACT_APP_BACKEND_URL + '/api' : '/api';
 
 export class ConnectionTester {
   constructor() {
