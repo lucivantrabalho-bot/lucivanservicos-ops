@@ -81,20 +81,32 @@ export function AuthProvider({ children }) {
         password
       });
       
-      const { access_token, user_id, username: userName, role } = response.data;
+      const { access_token, user_id, username: userName, role, status } = response.data;
       
       localStorage.setItem('token', access_token);
       setToken(access_token);
-      setUser({ id: user_id, username: userName, role });
+      setUser({ id: user_id, username: userName, role, status });
       setIsAdmin(role === 'ADMIN');
       
-      return { success: true };
+      return { success: true, status };
     } catch (error) {
       console.error('Registration failed:', error);
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Registration failed' 
       };
+    }
+  };
+
+  const checkUserStatus = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/me`);
+      setUser(response.data);
+      setIsAdmin(response.data.role === 'ADMIN');
+      return response.data;
+    } catch (error) {
+      console.error('Status check failed:', error);
+      return null;
     }
   };
 
