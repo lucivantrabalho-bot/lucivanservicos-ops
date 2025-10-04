@@ -72,13 +72,17 @@ class Pendencia(BaseModel):
     tipo: str  # "Energia" or "Arcon"
     subtipo: str  # Específico baseado no tipo
     observacoes: str
-    foto_base64: Optional[str] = None
-    status: str = "Pendente"  # "Pendente" or "Finalizado"
+    foto_base64: str  # Obrigatória
+    status: str = "Pendente"  # "Pendente", "Finalizado", "Validado", "Rejeitado"
     usuario_criacao: str
     usuario_finalizacao: Optional[str] = None
     data_finalizacao: Optional[datetime] = None
     informacoes_fechamento: Optional[str] = None
     foto_fechamento_base64: Optional[str] = None
+    validation_status: Optional[str] = None  # "APPROVED", "REJECTED"
+    validated_by: Optional[str] = None
+    validated_at: Optional[datetime] = None
+    validation_notes: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PendenciaCreate(BaseModel):
