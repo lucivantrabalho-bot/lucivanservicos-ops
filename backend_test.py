@@ -210,6 +210,148 @@ class BackendTester:
             self.log_test("Create Test User", False, f"Request failed: {str(e)}")
             return None
     
+    def test_password_reset_bug_investigation(self):
+        """
+        COMPREHENSIVE PASSWORD RESET BUG INVESTIGATION
+        Tests the reported bug where users can still login with old password after admin reset
+        """
+        print("\n" + "=" * 80)
+        print("🔍 PASSWORD RESET BUG INVESTIGATION")
+        print("=" * 80)
+        print("Testing reported issue: User can login with old password after admin reset")
+        print()
+        
+        # Step 1: Create a test user with known credentials
+        test_username = f"resettest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        original_password = "originalpass123"
+        new_password = "newpass456"
+        
+        try:
+            # Create test user
+            response = requests.post(
+                f"{self.base_url}/register",
+                json={"username": test_username, "password": original_password},
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Password Reset Bug - Create Test User", False, 
+                            f"Failed to create test user: {response.status_code}", response.text)
+                return False
+            
+            self.log_test("Password Reset Bug - Create Test User", True, 
+                        f"Created test user: {test_username}")
+            
+            # Step 2: Verify original login works
+            login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": test_username, "password": original_password},
+                timeout=10
+            )
+            
+            if login_response.status_code != 200:
+                self.log_test("Password Reset Bug - Original Login", False, 
+                            f"Original login failed: {login_response.status_code}", login_response.text)
+                return False
+            
+            original_token = login_response.json()["access_token"]
+            user_id = login_response.json()["user_id"]
+            self.log_test("Password Reset Bug - Original Login", True, 
+                        f"✅ Original password login successful")
+            
+            # Step 3: Admin resets the password
+            reset_response = requests.put(
+                f"{self.base_url}/admin/reset-password/{user_id}",
+                headers=self.get_auth_headers(),
+                json={"new_password": new_password},
+                timeout=10
+            )
+            
+            if reset_response.status_code != 200:
+                self.log_test("Password Reset Bug - Admin Reset", False, 
+                            f"Password reset failed: {reset_response.status_code}", reset_response.text)
+                return False
+            
+            self.log_test("Password Reset Bug - Admin Reset", True, 
+                        f"✅ Admin successfully reset password")
+            
+            # Step 4: Test login with NEW password (should work)
+            new_login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": test_username, "password": new_password},
+                timeout=10
+            )
+            
+            new_password_works = new_login_response.status_code == 200
+            if new_password_works:
+                self.log_test("Password Reset Bug - New Password Login", True, 
+                            f"✅ New password login successful")
+            else:
+                self.log_test("Password Reset Bug - New Password Login", False, 
+                            f"❌ New password login failed: {new_login_response.status_code}", 
+                            new_login_response.text)
+            
+            # Step 5: CRITICAL TEST - Try login with OLD password (should FAIL)
+            old_login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": test_username, "password": original_password},
+                timeout=10
+            )
+            
+            old_password_still_works = old_login_response.status_code == 200
+            
+            if old_password_still_works:
+                # THIS IS THE BUG!
+                self.log_test("Password Reset Bug - Old Password Login", False, 
+                            f"🚨 CRITICAL BUG CONFIRMED: Old password still works after reset!", 
+                            f"Status: {old_login_response.status_code}, Response: {old_login_response.text}")
+                print(f"🚨 BUG CONFIRMED: User {test_username} can still login with old password!")
+                print(f"   Original password: {original_password}")
+                print(f"   New password: {new_password}")
+                print(f"   Both passwords work - this is the reported bug!")
+            else:
+                self.log_test("Password Reset Bug - Old Password Login", True, 
+                            f"✅ Old password correctly rejected after reset")
+                print(f"✅ Password reset working correctly - old password rejected")
+            
+            # Step 6: Cleanup - delete test user
+            delete_response = requests.delete(
+                f"{self.base_url}/admin/delete-user/{user_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if delete_response.status_code == 200:
+                self.log_test("Password Reset Bug - Cleanup", True, "Test user deleted successfully")
+            else:
+                self.log_test("Password Reset Bug - Cleanup", False, 
+                            f"Failed to delete test user: {delete_response.status_code}")
+            
+            # Summary of bug investigation
+            print("\n" + "=" * 80)
+            print("🔍 BUG INVESTIGATION SUMMARY")
+            print("=" * 80)
+            print(f"Test User: {test_username}")
+            print(f"Original Password: {original_password}")
+            print(f"New Password: {new_password}")
+            print(f"New Password Works: {'✅ YES' if new_password_works else '❌ NO'}")
+            print(f"Old Password Still Works: {'🚨 YES (BUG!)' if old_password_still_works else '✅ NO (CORRECT)'}")
+            
+            if old_password_still_works:
+                print("\n🚨 CRITICAL ISSUE IDENTIFIED:")
+                print("   - Password reset endpoint returns success")
+                print("   - But old password still allows login")
+                print("   - This indicates the password hash is NOT being updated in database")
+                print("   - OR there's a caching/session issue")
+                return False
+            else:
+                print("\n✅ Password reset functionality working correctly")
+                return True
+                
+        except Exception as e:
+            self.log_test("Password Reset Bug Investigation", False, f"Test failed with exception: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all admin user management tests"""
         print("=" * 60)
@@ -223,6 +365,10 @@ class BackendTester:
             print("❌ Cannot proceed without admin authentication")
             return False
         
+        print()
+        
+        # PRIORITY: Run password reset bug investigation first
+        bug_test_passed = self.test_password_reset_bug_investigation()
         print()
         
         # Step 2: Test get all users
@@ -280,6 +426,11 @@ class BackendTester:
             print("\nFAILED TESTS:")
             for test in failed_tests:
                 print(f"  - {test['test']}: {test['message']}")
+        
+        # Special attention to password reset bug
+        if not bug_test_passed:
+            print("\n🚨 CRITICAL PASSWORD RESET BUG DETECTED!")
+            print("   This requires immediate investigation and fix.")
         
         return passed == total
 
