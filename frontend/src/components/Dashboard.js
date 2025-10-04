@@ -36,6 +36,12 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // Modal state
+  const [finalizeModal, setFinalizeModal] = useState({
+    isOpen: false,
+    pendencia: null
+  });
+  
   // Filters
   const [filters, setFilters] = useState({
     site: '',
