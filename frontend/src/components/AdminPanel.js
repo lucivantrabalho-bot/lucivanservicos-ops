@@ -44,6 +44,15 @@ export default function AdminPanel() {
     isOpen: false,
     user: null
   });
+  
+  // Estados para configuração do formulário
+  const [formConfig, setFormConfig] = useState({
+    energia_options: [],
+    arcon_options: []
+  });
+  const [configLoading, setConfigLoading] = useState(false);
+  const [newEnergiaItem, setNewEnergiaItem] = useState('');
+  const [newArconItem, setNewArconItem] = useState('');
 
   // Redirect if not admin
   useEffect(() => {
