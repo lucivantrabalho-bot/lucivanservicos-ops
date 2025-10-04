@@ -610,6 +610,19 @@ export default function Dashboard() {
                           </Button>
                         </>
                       )}
+
+                      {/* Admin pode excluir qualquer pendência */}
+                      {isAdmin && pendencia.status === 'Finalizado' && (
+                        <Button
+                          onClick={() => openDeleteModal(pendencia)}
+                          variant="outline"
+                          size="sm"
+                          className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Excluir (Admin)
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
