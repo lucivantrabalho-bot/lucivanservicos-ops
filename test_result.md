@@ -213,6 +213,42 @@
           agent: "testing"
           comment: "TESTED: Successfully retrieves individual user statistics for current month (October 2025). Returns proper structure with month, year, created_count, finished_count, approved_created_count, and approved_finished_count fields. Statistics calculation working correctly."
 
+  - task: "Dashboard Statistics Advanced - POST /reports/dashboard-stats"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTADO: Novo endpoint para estatísticas avançadas do dashboard com filtros por período, site, tipo, status, validação. Retorna métricas completas incluindo taxa de finalização, usuários ativos, distribuições por tipo/site/mês usando agregações MongoDB."
+
+  - task: "Export Advanced - POST /reports/export-advanced"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTADO: Exportação Excel avançada com formatação melhorada, cabeçalhos coloridos, status com cores, informações de filtros no topo, células coloridas por status de validação. Suporte a filtros avançados e múltiplas opções de configuração."
+
+  - task: "Performance Metrics - GET /reports/performance-metrics"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTADO: Endpoint para métricas de performance dos últimos N dias. Calcula tempo médio de finalização, estatísticas por dia, usuários mais ativos. Usa agregações MongoDB para análise de performance detalhada."
+
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
     implemented: true
