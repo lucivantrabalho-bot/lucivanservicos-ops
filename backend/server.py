@@ -65,6 +65,7 @@ class Token(BaseModel):
     user_id: str
     username: str
     role: str = "USER"
+    status: Optional[str] = "APPROVED"
 
 class Pendencia(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
