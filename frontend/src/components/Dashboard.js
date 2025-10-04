@@ -145,8 +145,7 @@ export default function Dashboard() {
   };
 
   const handleEditSuccess = () => {
-    setSuccess('Pendência editada com sucesso!');
-    setTimeout(() => setSuccess(''), 3000);
+    success('Pendência editada com sucesso!');
     loadPendencias();
   };
 
