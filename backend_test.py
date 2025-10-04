@@ -1300,6 +1300,61 @@ class BackendTester:
             self.log_test("Admin Delete Pendencia", False, f"Request failed: {str(e)}")
             return False
 
+    def test_admin_delete_finished_pendencia(self):
+        """Test admin deleting a finished pendencia (specific scenario)"""
+        try:
+            # Create a test pendencia
+            pendencia_id = self.create_test_pendencia()
+            if not pendencia_id:
+                self.log_test("Admin Delete Finished Pendencia", False, "Failed to create test pendencia")
+                return False
+            
+            # Update it to finished status
+            update_data = {
+                "status": "Finalizado",
+                "informacoes_fechamento": "Test completion info",
+                "foto_fechamento_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            update_response = requests.put(
+                f"{self.base_url}/pendencias/{pendencia_id}",
+                headers=self.get_auth_headers(),
+                json=update_data,
+                timeout=10
+            )
+            
+            if update_response.status_code != 200:
+                self.log_test("Admin Delete Finished Pendencia", False, 
+                            f"Failed to update pendencia to finished: {update_response.status_code}")
+                return False
+            
+            # Now try to delete the finished pendencia as admin
+            delete_response = requests.delete(
+                f"{self.base_url}/admin/delete-pendencia/{pendencia_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if delete_response.status_code == 200:
+                result = delete_response.json()
+                if "message" in result:
+                    self.log_test("Admin Delete Finished Pendencia", True, 
+                                f"Admin successfully deleted finished pendencia {pendencia_id}",
+                                f"Message: {result['message']}")
+                    return True
+                else:
+                    self.log_test("Admin Delete Finished Pendencia", False, 
+                                "No success message in response", result)
+                    return False
+            else:
+                self.log_test("Admin Delete Finished Pendencia", False, 
+                            f"Failed to delete finished pendencia: {delete_response.status_code}", delete_response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Delete Finished Pendencia", False, f"Request failed: {str(e)}")
+            return False
+
     def test_authentication_required(self):
         """Test that endpoints require proper authentication"""
         try:
