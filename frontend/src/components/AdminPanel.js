@@ -237,6 +237,67 @@ export default function AdminPanel() {
     }
   };
 
+  // Funções para gerenciar KML
+  const loadKmlLocations = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/kml/locations`);
+      setKmlLocations(response.data);
+    } catch (err) {
+      console.error('Error loading KML locations:', err);
+    }
+  };
+
+  const handleKmlFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.name.toLowerCase().endsWith('.kml')) {
+      setKmlFile(file);
+    } else {
+      setError('Por favor, selecione um arquivo KML válido');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleKmlUpload = async () => {
+    if (!kmlFile) {
+      setError('Selecione um arquivo KML para enviar');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    setKmlUploading(true);
+    const formData = new FormData();
+    formData.append('file', kmlFile);
+
+    try {
+      const response = await axios.post(`${API_BASE}/admin/upload-kml`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setSuccess(`${response.data.message}`);
+      setTimeout(() => setSuccess(''), 5000);
+      setKmlFile(null);
+      
+      // Reset file input
+      const fileInput = document.getElementById('kml-file-input');
+      if (fileInput) fileInput.value = '';
+      
+      // Reload locations
+      loadKmlLocations();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao processar arquivo KML');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setKmlUploading(false);
+    }
+  };
+
+  const openInMaps = (latitude, longitude, name) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    window.open(url, '_blank');
+  };
+
   if (!isAdmin) {
     return null;
   }
