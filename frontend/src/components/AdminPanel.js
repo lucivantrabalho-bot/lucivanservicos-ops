@@ -542,6 +542,139 @@ export default function AdminPanel() {
             )}
           </TabsContent>
 
+          {/* Configurar Formulário */}
+          <TabsContent value="form-config" className="space-y-6">
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Settings className="w-5 h-5 mr-2 text-blue-500" />
+                  Configuração do Formulário "Nova Pendência"
+                </CardTitle>
+                <CardDescription>
+                  Gerencie as opções disponíveis nos campos Energia e Arcon
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Seção Energia */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center">
+                    ⚡ Opções de Energia
+                  </h3>
+                  
+                  {/* Adicionar novo item */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Digite nova opção para Energia"
+                      value={newEnergiaItem}
+                      onChange={(e) => setNewEnergiaItem(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddEnergiaItem();
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={handleAddEnergiaItem}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Adicionar
+                    </Button>
+                  </div>
+                  
+                  {/* Lista de itens */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {formConfig.energia_options.map((item, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border"
+                      >
+                        <span className="text-sm font-medium">{item}</span>
+                        <Button
+                          onClick={() => handleRemoveEnergiaItem(item)}
+                          variant="outline"
+                          size="sm"
+                          className="ml-2 p-1 h-7 w-7 text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Seção Arcon */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center">
+                    ❄️ Opções de Arcon
+                  </h3>
+                  
+                  {/* Adicionar novo item */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Digite nova opção para Arcon"
+                      value={newArconItem}
+                      onChange={(e) => setNewArconItem(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddArconItem();
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={handleAddArconItem}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Adicionar
+                    </Button>
+                  </div>
+                  
+                  {/* Lista de itens */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {formConfig.arcon_options.map((item, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border"
+                      >
+                        <span className="text-sm font-medium">{item}</span>
+                        <Button
+                          onClick={() => handleRemoveArconItem(item)}
+                          variant="outline"
+                          size="sm"
+                          className="ml-2 p-1 h-7 w-7 text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Botão Salvar */}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    onClick={handleSaveFormConfig}
+                    disabled={configLoading}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6"
+                  >
+                    {configLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar Configurações
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Estatísticas Mensais */}
           <TabsContent value="stats" className="space-y-6">
             {monthlyStats && (
