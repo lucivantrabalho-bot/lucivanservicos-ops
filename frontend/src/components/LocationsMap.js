@@ -204,34 +204,56 @@ export default function LocationsMap() {
         {/* Search and Actions */}
         <div className="mb-6 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nome, descrição ou arquivo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex-1 max-w-2xl">
+              <div className="flex space-x-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Input
+                    placeholder="Busque por nome da estação ou localização (min. 2 caracteres)..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={handleSearchKeyPress}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Button 
+                  onClick={searchLocations} 
+                  disabled={searching || searchTerm.length < 2}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  {searching ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                </Button>
+                
+                {searchPerformed && (
+                  <Button onClick={clearSearch} variant="outline">
+                    Limpar
+                  </Button>
+                )}
               </div>
+              
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                💡 Digite o nome da estação ou local que procura para encontrar rapidamente
+              </p>
             </div>
             
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {filteredLocations.length} de {locations.length} localizações
-              </span>
+              {searchPerformed && (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {locations.length} localizações encontradas
+                </span>
+              )}
               
-              {filteredLocations.length > 1 && (
+              {locations.length > 1 && (
                 <Button onClick={openAllInMaps} variant="outline" size="sm">
                   <Map className="w-4 h-4 mr-2" />
                   Ver Todas no Maps
                 </Button>
               )}
-              
-              <Button onClick={loadLocations} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
             </div>
           </div>
         </div>
