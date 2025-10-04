@@ -165,8 +165,7 @@ export default function Dashboard() {
   };
 
   const handleDeleteSuccess = () => {
-    setSuccess('Pendência excluída com sucesso!');
-    setTimeout(() => setSuccess(''), 3000);
+    success('Pendência excluída com sucesso!');
     loadPendencias();
   };
 
