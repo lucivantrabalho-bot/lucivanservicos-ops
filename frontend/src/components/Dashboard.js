@@ -46,6 +46,16 @@ export default function Dashboard() {
     pendencia: null
   });
   
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    pendencia: null
+  });
+  
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    pendencia: null
+  });
+  
   // Filters
   const [filters, setFilters] = useState({
     site: '',
