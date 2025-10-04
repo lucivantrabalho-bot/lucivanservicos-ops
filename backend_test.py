@@ -2356,6 +2356,46 @@ class BackendTester:
             self.test_admin_delete_kml(kml_id)
             print()
         
+        # NEW: Test KML Search and Observation System (as requested in Portuguese review)
+        print("🔍 Testing NEW KML Search & Observation Features...")
+        print("Testing as specified in Portuguese review request:")
+        print("- Smart Search Endpoint: GET /api/kml/search")
+        print("- Observation System: POST/GET/DELETE observations")
+        print()
+        
+        # Test KML Search functionality
+        self.test_kml_search_valid_queries()
+        print()
+        self.test_kml_search_invalid_query()
+        print()
+        self.test_kml_search_performance()
+        print()
+        
+        # Test Observation System
+        location_id, observation_id = self.test_add_location_observation()
+        print()
+        self.test_add_empty_observation()
+        print()
+        
+        if location_id:
+            observations = self.test_get_location_observations(location_id)
+            print()
+            
+        if observation_id:
+            self.test_delete_observation_own(observation_id)
+            print()
+        
+        self.test_delete_nonexistent_observation()
+        print()
+        
+        # Test complete observation flow as specified in review request
+        self.test_observation_system_complete_flow()
+        print()
+        
+        # Test KML authentication requirements
+        self.test_kml_authentication_requirements()
+        print()
+        
         # Test 2: Admin Delete Pendencia (re-test)
         print("🗑️ Testing Admin Delete Pendencia...")
         self.test_admin_delete_pendencia()
