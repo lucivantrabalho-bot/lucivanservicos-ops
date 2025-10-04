@@ -245,13 +245,18 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/pendencias", response_model=Pendencia)
 async def create_pendencia(pendencia_data: PendenciaCreate, current_user: User = Depends(get_current_user)):
+    # Validar se foto é obrigatória
+    if not pendencia_data.foto_base64 or not pendencia_data.foto_base64.strip():
+        raise HTTPException(status_code=400, detail="Foto é obrigatória para criar uma pendência")
+    
     pendencia = Pendencia(
         site=pendencia_data.site,
         tipo=pendencia_data.tipo,
         subtipo=pendencia_data.subtipo,
         observacoes=pendencia_data.observacoes,
         foto_base64=pendencia_data.foto_base64,
-        usuario_criacao=current_user.username
+        usuario_criacao=current_user.username,
+        data_hora=to_brasilia_time(datetime.now(timezone.utc))
     )
     
     await db.pendencias.insert_one(pendencia.dict())
