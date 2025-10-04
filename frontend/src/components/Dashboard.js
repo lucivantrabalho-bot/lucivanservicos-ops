@@ -122,6 +122,48 @@ export default function Dashboard() {
     loadPendencias();
   };
 
+  // Edit modal functions
+  const openEditModal = (pendencia) => {
+    setEditModal({
+      isOpen: true,
+      pendencia: pendencia
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditModal({
+      isOpen: false,
+      pendencia: null
+    });
+  };
+
+  const handleEditSuccess = () => {
+    setSuccess('Pendência editada com sucesso!');
+    setTimeout(() => setSuccess(''), 3000);
+    loadPendencias();
+  };
+
+  // Delete modal functions
+  const openDeleteModal = (pendencia) => {
+    setDeleteModal({
+      isOpen: true,
+      pendencia: pendencia
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({
+      isOpen: false,
+      pendencia: null
+    });
+  };
+
+  const handleDeleteSuccess = () => {
+    setSuccess('Pendência excluída com sucesso!');
+    setTimeout(() => setSuccess(''), 3000);
+    loadPendencias();
+  };
+
   const handleExport = async () => {
     try {
       const params = new URLSearchParams();
