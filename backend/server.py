@@ -233,10 +233,14 @@ async def update_pendencia(
     if not pendencia:
         raise HTTPException(status_code=404, detail="Pendência not found")
     
-    update_data = pendencia_update.dict()
+    update_data = pendencia_update.dict(exclude_unset=True)
     if pendencia_update.status == "Finalizado":
         update_data["usuario_finalizacao"] = current_user.username
         update_data["data_finalizacao"] = datetime.now(timezone.utc)
+        
+        # Validar se informações de fechamento foram fornecidas
+        if not pendencia_update.informacoes_fechamento or not pendencia_update.informacoes_fechamento.strip():
+            raise HTTPException(status_code=400, detail="Informações de fechamento são obrigatórias")
     
     await db.pendencias.update_one(
         {"id": pendencia_id},
