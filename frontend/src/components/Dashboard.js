@@ -228,7 +228,7 @@ export default function Dashboard() {
                 <AlertCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Gerenciador CN19</h1>
                 <p className="text-sm text-slate-600">Bem-vindo, {user?.username}!</p>
               </div>
             </div>
