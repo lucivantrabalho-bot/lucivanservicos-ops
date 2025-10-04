@@ -191,8 +191,8 @@ export default function CreatePendencia() {
   };
 
   const getSubtipoOptions = () => {
-    if (formData.tipo === 'Energia') return OPCOES_ENERGIA;
-    if (formData.tipo === 'Arcon') return OPCOES_ARCON;
+    if (formData.tipo === 'Energia') return energiaOptions;
+    if (formData.tipo === 'Arcon') return arconOptions;
     return [];
   };
 
