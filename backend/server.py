@@ -1088,6 +1088,16 @@ async def _export_to_excel_advanced(pendencias, export_config: ExportFormat, fil
             filename=filename
         )
 
+@api_router.get("/health")
+async def health_check():
+    """Endpoint de saúde para verificar conectividade do backend"""
+    return {
+        "status": "healthy",
+        "service": "CN19 Backend API",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    }
+
 @api_router.get("/reports/performance-metrics")
 async def get_performance_metrics(
     days: int = 30,
