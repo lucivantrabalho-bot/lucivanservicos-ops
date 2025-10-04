@@ -747,6 +747,139 @@ export default function AdminPanel() {
             </Card>
           </TabsContent>
 
+          {/* Gerenciar KML */}
+          <TabsContent value="kml-manager" className="space-y-6">
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-emerald-500" />
+                  Gerenciador de Arquivos KML
+                </CardTitle>
+                <CardDescription>
+                  Importe arquivos KML e gerencie localizações para disponibilizar aos usuários
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Upload Section */}
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6">
+                  <div className="text-center space-y-4">
+                    <Upload className="w-12 h-12 mx-auto text-slate-400" />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Importar Arquivo KML</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                        Selecione um arquivo KML contendo dados de localização
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+                      <input
+                        id="kml-file-input"
+                        type="file"
+                        accept=".kml"
+                        onChange={handleKmlFileChange}
+                        className="block text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      
+                      <Button 
+                        onClick={handleKmlUpload}
+                        disabled={!kmlFile || kmlUploading}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white min-w-[120px]"
+                      >
+                        {kmlUploading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Enviar KML
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {kmlFile && (
+                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                        Arquivo selecionado: <span className="font-medium">{kmlFile.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Locations List */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Localizações Importadas ({kmlLocations.length})</h3>
+                    <Button onClick={loadKmlLocations} variant="outline" size="sm">
+                      <Eye className="w-4 h-4 mr-2" />
+                      Atualizar Lista
+                    </Button>
+                  </div>
+
+                  {kmlLocations.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-8 text-center">
+                        <MapPin className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Nenhuma localização encontrada</h3>
+                        <p className="text-slate-600 dark:text-slate-400">Importe um arquivo KML para começar</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {kmlLocations.map((location, index) => (
+                        <Card key={index} className="glass card-hover">
+                          <CardContent className="p-4">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                    {location.name}
+                                  </h4>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {location.source_file}
+                                  </p>
+                                </div>
+                                <MapPin className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                              </div>
+                              
+                              {location.description && (
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                                  {location.description}
+                                </p>
+                              )}
+                              
+                              <div className="text-xs space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Latitude:</span>
+                                  <span className="font-mono">{location.latitude?.toFixed(6)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Longitude:</span>
+                                  <span className="font-mono">{location.longitude?.toFixed(6)}</span>
+                                </div>
+                              </div>
+                              
+                              <Button 
+                                onClick={() => openInMaps(location.latitude, location.longitude, location.name)}
+                                variant="outline"
+                                size="sm"
+                                className="w-full btn-hover border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              >
+                                <ExternalLink className="w-3 h-3 mr-2" />
+                                Abrir no Maps
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Estatísticas Mensais */}
           <TabsContent value="stats" className="space-y-6">
             {monthlyStats && (
