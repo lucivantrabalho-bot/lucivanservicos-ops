@@ -64,6 +64,7 @@ class Token(BaseModel):
     token_type: str
     user_id: str
     username: str
+    role: str = "USER"
 
 class Pendencia(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
