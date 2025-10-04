@@ -86,6 +86,8 @@ class PendenciaCreate(BaseModel):
 
 class PendenciaUpdate(BaseModel):
     status: str
+    informacoes_fechamento: Optional[str] = None
+    foto_fechamento_base64: Optional[str] = None
 
 
 # Auth helpers
