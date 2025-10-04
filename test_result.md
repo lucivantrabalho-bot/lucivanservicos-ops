@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: Implementar "Lista de usuários cadastrados no painel ADM com opções de excluir e reset de senha"
+## user_problem_statement: Investigar problemas de login no frontend do sistema - usuário reporta que os logins não estão funcionando
 
 ## backend:
   - task: "Endpoint get all users - /admin/all-users"
