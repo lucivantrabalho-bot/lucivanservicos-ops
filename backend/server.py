@@ -189,8 +189,13 @@ async def get_admin_user(current_user: User = Depends(get_current_user)):
 
 # Função para converter UTC para horário de Brasília
 def to_brasilia_time(utc_dt: datetime) -> datetime:
-    from zoneinfo import ZoneInfo
-    return utc_dt.replace(tzinfo=ZoneInfo('UTC')).astimezone(ZoneInfo('America/Sao_Paulo'))
+    try:
+        from zoneinfo import ZoneInfo
+        return utc_dt.replace(tzinfo=ZoneInfo('UTC')).astimezone(ZoneInfo('America/Sao_Paulo'))
+    except ImportError:
+        # Fallback para sistemas sem zoneinfo
+        from datetime import timedelta
+        return utc_dt - timedelta(hours=3)  # UTC-3 para horário de Brasília
 
 
 # Routes
