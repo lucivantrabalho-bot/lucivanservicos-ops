@@ -363,6 +363,102 @@ async def delete_pendencia(
     
     return {"message": "Pendência excluída com sucesso"}
 
+# Admin endpoints
+@api_router.get("/admin/pending-users")
+async def get_pending_users(admin_user: User = Depends(get_admin_user)):
+    users = await db.users.find({"status": "PENDING"}).to_list(1000)
+    return [{"id": user["id"], "username": user["username"], "created_at": user["created_at"]} for user in users]
+
+@api_router.put("/admin/approve-user/{user_id}")
+async def approve_user(user_id: str, approval: UserApproval, admin_user: User = Depends(get_admin_user)):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_data = {
+        "status": approval.status,
+        "approved_by": admin_user.username,
+        "approved_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    return {"message": f"User {approval.status.lower()} successfully"}
+
+@api_router.get("/admin/pendencias")
+async def get_all_pendencias_admin(admin_user: User = Depends(get_admin_user)):
+    pendencias = await db.pendencias.find().sort("created_at", -1).to_list(1000)
+    return [Pendencia(**pendencia) for pendencia in pendencias]
+
+@api_router.put("/admin/validate-pendencia/{pendencia_id}")
+async def validate_pendencia(
+    pendencia_id: str,
+    validation: PendenciaValidation,
+    admin_user: User = Depends(get_admin_user)
+):
+    pendencia = await db.pendencias.find_one({"id": pendencia_id})
+    if not pendencia:
+        raise HTTPException(status_code=404, detail="Pendência não encontrada")
+    
+    update_data = {
+        "validation_status": validation.status,
+        "validated_by": admin_user.username,
+        "validated_at": datetime.now(timezone.utc),
+        "validation_notes": validation.validation_notes
+    }
+    
+    # Se rejeitado, volta para Pendente
+    if validation.status == "REJECTED":
+        update_data["status"] = "Pendente"
+    
+    await db.pendencias.update_one({"id": pendencia_id}, {"$set": update_data})
+    return {"message": "Pendência validada com sucesso"}
+
+@api_router.get("/stats/monthly")
+async def get_monthly_stats(current_user: User = Depends(get_current_user)):
+    from datetime import datetime, timezone
+    import calendar
+    
+    # Get current month/year
+    now = datetime.now(timezone.utc)
+    current_month = now.month
+    current_year = now.year
+    
+    # Stats for current month
+    start_date = datetime(current_year, current_month, 1, tzinfo=timezone.utc)
+    if current_month == 12:
+        end_date = datetime(current_year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(current_year, current_month + 1, 1, tzinfo=timezone.utc)
+    
+    # Most created pendencias this month
+    created_pipeline = [
+        {"$match": {"created_at": {"$gte": start_date, "$lt": end_date}}},
+        {"$group": {"_id": "$usuario_criacao", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 1}
+    ]
+    
+    # Most finished pendencias this month
+    finished_pipeline = [
+        {"$match": {
+            "data_finalizacao": {"$gte": start_date, "$lt": end_date},
+            "status": "Finalizado"
+        }},
+        {"$group": {"_id": "$usuario_finalizacao", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 1}
+    ]
+    
+    most_created = list(await db.pendencias.aggregate(created_pipeline).to_list(1))
+    most_finished = list(await db.pendencias.aggregate(finished_pipeline).to_list(1))
+    
+    return {
+        "month": calendar.month_name[current_month],
+        "year": current_year,
+        "most_created": most_created[0] if most_created else None,
+        "most_finished": most_finished[0] if most_finished else None
+    }
+
 @api_router.get("/pendencias/export")
 async def export_pendencias(
     site: Optional[str] = None,
