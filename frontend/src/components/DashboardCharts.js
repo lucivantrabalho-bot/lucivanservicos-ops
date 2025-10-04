@@ -16,6 +16,8 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL + '/api';
 
