@@ -163,6 +163,65 @@ export default function AdminPanel() {
     }
   };
 
+  // Funções para configuração do formulário
+  const loadFormConfig = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/admin/form-config`);
+      setFormConfig(response.data);
+    } catch (err) {
+      console.error('Error loading form config:', err);
+      setError('Erro ao carregar configuração do formulário');
+    }
+  };
+
+  const handleAddEnergiaItem = () => {
+    if (newEnergiaItem.trim() && !formConfig.energia_options.includes(newEnergiaItem.trim())) {
+      setFormConfig(prev => ({
+        ...prev,
+        energia_options: [...prev.energia_options, newEnergiaItem.trim()]
+      }));
+      setNewEnergiaItem('');
+    }
+  };
+
+  const handleRemoveEnergiaItem = (item) => {
+    setFormConfig(prev => ({
+      ...prev,
+      energia_options: prev.energia_options.filter(opt => opt !== item)
+    }));
+  };
+
+  const handleAddArconItem = () => {
+    if (newArconItem.trim() && !formConfig.arcon_options.includes(newArconItem.trim())) {
+      setFormConfig(prev => ({
+        ...prev,
+        arcon_options: [...prev.arcon_options, newArconItem.trim()]
+      }));
+      setNewArconItem('');
+    }
+  };
+
+  const handleRemoveArconItem = (item) => {
+    setFormConfig(prev => ({
+      ...prev,
+      arcon_options: prev.arcon_options.filter(opt => opt !== item)
+    }));
+  };
+
+  const handleSaveFormConfig = async () => {
+    setConfigLoading(true);
+    try {
+      await axios.put(`${API_BASE}/admin/form-config`, formConfig);
+      setSuccess('Configuração do formulário salva com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Erro ao salvar configuração do formulário');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
   if (!isAdmin) {
     return null;
   }
