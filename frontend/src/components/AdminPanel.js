@@ -22,7 +22,11 @@ import {
   Settings,
   Plus,
   Trash2,
-  Save
+  Save,
+  Upload,
+  MapPin,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
