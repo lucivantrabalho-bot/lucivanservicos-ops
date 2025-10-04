@@ -594,6 +594,157 @@ async def update_form_config(config: FormConfigUpdate, admin_user: User = Depend
     )
     return {"message": "Configuração do formulário atualizada com sucesso"}
 
+# Endpoints para análise de arquivos KML
+@api_router.post("/admin/upload-kml")
+async def upload_kml_file(
+    file: UploadFile = File(...),
+    admin_user: User = Depends(get_admin_user)
+):
+    import xml.etree.ElementTree as ET
+    import re
+    
+    # Validate file extension
+    if not file.filename.lower().endswith('.kml'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos KML são aceitos")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        # Parse KML
+        root = ET.fromstring(content_str)
+        
+        # Define KML namespace
+        ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+        
+        locations = []
+        
+        # Extract placemarks
+        placemarks = root.findall('.//kml:Placemark', ns)
+        
+        for placemark in placemarks:
+            location_data = {}
+            
+            # Get name
+            name_elem = placemark.find('kml:name', ns)
+            if name_elem is not None:
+                location_data['name'] = name_elem.text or 'Unnamed'
+            else:
+                location_data['name'] = 'Unnamed'
+            
+            # Get description
+            desc_elem = placemark.find('kml:description', ns)
+            if desc_elem is not None:
+                location_data['description'] = desc_elem.text or ''
+            else:
+                location_data['description'] = ''
+            
+            # Get coordinates - try different coordinate elements
+            coordinates = None
+            
+            # Try Point coordinates
+            point = placemark.find('.//kml:Point/kml:coordinates', ns)
+            if point is not None:
+                coordinates = point.text.strip()
+            
+            # Try LineString coordinates  
+            if not coordinates:
+                linestring = placemark.find('.//kml:LineString/kml:coordinates', ns)
+                if linestring is not None:
+                    coordinates = linestring.text.strip()
+            
+            # Try Polygon coordinates
+            if not coordinates:
+                polygon = placemark.find('.//kml:Polygon/kml:outerBoundaryIs/kml:LinearRing/kml:coordinates', ns)
+                if polygon is not None:
+                    coordinates = polygon.text.strip()
+            
+            if coordinates:
+                # Parse coordinates (longitude,latitude,altitude format)
+                coord_lines = coordinates.strip().split('\n')
+                coord_pairs = []
+                
+                for line in coord_lines:
+                    line = line.strip()
+                    if line:
+                        # Split by whitespace or comma-separated groups
+                        coords = re.findall(r'-?\d+\.?\d*,-?\d+\.?\d*(?:,-?\d+\.?\d*)?', line)
+                        for coord in coords:
+                            parts = coord.split(',')
+                            if len(parts) >= 2:
+                                try:
+                                    lng = float(parts[0])
+                                    lat = float(parts[1])
+                                    coord_pairs.append({'lat': lat, 'lng': lng})
+                                except ValueError:
+                                    continue
+                
+                if coord_pairs:
+                    # For multiple coordinates, take the first or center
+                    if len(coord_pairs) == 1:
+                        location_data['latitude'] = coord_pairs[0]['lat']
+                        location_data['longitude'] = coord_pairs[0]['lng']
+                    else:
+                        # Calculate center for multiple points
+                        avg_lat = sum(p['lat'] for p in coord_pairs) / len(coord_pairs)
+                        avg_lng = sum(p['lng'] for p in coord_pairs) / len(coord_pairs)
+                        location_data['latitude'] = avg_lat
+                        location_data['longitude'] = avg_lng
+                        location_data['coordinate_count'] = len(coord_pairs)
+                    
+                    locations.append(location_data)
+        
+        if not locations:
+            raise HTTPException(status_code=400, detail="Nenhuma localização válida encontrada no arquivo KML")
+        
+        # Save to database
+        kml_data = {
+            "id": str(uuid4()),
+            "filename": file.filename,
+            "uploaded_by": admin_user.username,
+            "uploaded_at": datetime.now(timezone.utc),
+            "locations": locations,
+            "total_locations": len(locations),
+            "status": "active"
+        }
+        
+        await db.kml_data.insert_one(kml_data)
+        
+        return {
+            "message": f"Arquivo KML processado com sucesso! {len(locations)} localizações encontradas.",
+            "kml_id": kml_data["id"],
+            "total_locations": len(locations),
+            "locations": locations[:10]  # Return first 10 as preview
+        }
+        
+    except ET.ParseError:
+        raise HTTPException(status_code=400, detail="Arquivo KML inválido ou corrompido")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo KML: {str(e)}")
+
+@api_router.get("/kml/locations")
+async def get_kml_locations(current_user: User = Depends(get_current_user)):
+    kml_files = await db.kml_data.find({"status": "active"}).to_list(length=None)
+    
+    all_locations = []
+    for kml_file in kml_files:
+        for location in kml_file.get("locations", []):
+            location["source_file"] = kml_file["filename"]
+            location["uploaded_by"] = kml_file["uploaded_by"]
+            all_locations.append(location)
+    
+    return all_locations
+
+@api_router.delete("/admin/kml/{kml_id}")
+async def delete_kml_data(kml_id: str, admin_user: User = Depends(get_admin_user)):
+    result = await db.kml_data.delete_one({"id": kml_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Dados KML não encontrados")
+    
+    return {"message": "Dados KML excluídos com sucesso"}
+
 # Endpoints para perfil do usuário
 @api_router.put("/user/change-password")
 async def change_user_password(password_change: PasswordChange, current_user: User = Depends(get_current_user)):
