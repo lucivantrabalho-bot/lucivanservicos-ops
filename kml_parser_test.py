@@ -99,8 +99,11 @@ class KMLParserTester:
             
             return response
             
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             self.log_test(test_name, False, f"Upload request failed: {str(e)}")
+            return None
+        except Exception as e:
+            self.log_test(test_name, False, f"Unexpected error: {str(e)}")
             return None
         finally:
             # Clean up temp file
