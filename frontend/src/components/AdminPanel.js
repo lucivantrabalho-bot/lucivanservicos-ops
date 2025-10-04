@@ -126,6 +126,33 @@ export default function AdminPanel() {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    try {
+      await axios.delete(`${API_BASE}/admin/delete-user/${userId}`);
+      setSuccess('Usuário excluído com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+      setDeleteUserModal({ isOpen: false, user: null });
+      loadAllUsers();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao excluir usuário');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleResetPassword = async (userId, newPassword) => {
+    try {
+      await axios.put(`${API_BASE}/admin/reset-password/${userId}`, {
+        new_password: newPassword
+      });
+      setSuccess('Senha resetada com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+      setResetPasswordModal({ isOpen: false, user: null });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao resetar senha');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   if (!isAdmin) {
     return null;
   }
