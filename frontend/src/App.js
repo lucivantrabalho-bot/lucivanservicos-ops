@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import CreatePendencia from './components/CreatePendencia';
 import AdminPanel from './components/AdminPanel';
 import UserProfile from './components/UserProfile';
+import PendingApproval from './components/PendingApproval';
 
 // Auth context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
