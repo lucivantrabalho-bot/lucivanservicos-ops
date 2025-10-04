@@ -304,6 +304,8 @@ async def export_pendencias(
         ws.cell(row=row, column=8, value=pendencia["usuario_criacao"])
         ws.cell(row=row, column=9, value=pendencia.get("usuario_finalizacao", ""))
         ws.cell(row=row, column=10, value=pendencia["data_finalizacao"].strftime("%d/%m/%Y %H:%M") if pendencia.get("data_finalizacao") else "")
+        ws.cell(row=row, column=11, value=pendencia.get("informacoes_fechamento", ""))
+        ws.cell(row=row, column=12, value="Sim" if pendencia.get("foto_fechamento_base64") else "Não")
     
     # Auto-adjust column width
     for column in ws.columns:
