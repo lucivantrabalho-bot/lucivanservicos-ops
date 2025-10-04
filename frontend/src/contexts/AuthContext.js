@@ -100,6 +100,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    setIsAdmin(false);
     delete axios.defaults.headers.common['Authorization'];
   };
 
