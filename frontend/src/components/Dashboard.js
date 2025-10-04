@@ -95,7 +95,7 @@ export default function Dashboard() {
       setPendencias(response.data);
     } catch (err) {
       console.error('Error loading pendencias:', err);
-      setError('Erro ao carregar pendências');
+      showError('Erro ao carregar pendências');
     } finally {
       setLoading(false);
     }
