@@ -262,6 +262,22 @@ export default function CreatePendencia() {
                   className="form-input"
                 />
               </div>
+
+              {/* AMI */}
+              <div className="space-y-2">
+                <Label htmlFor="ami" className="text-sm font-medium text-slate-700">
+                  AMI
+                </Label>
+                <Input
+                  id="ami"
+                  data-testid="ami-input"
+                  type="text"
+                  placeholder="Digite o código AMI (opcional)"
+                  value={formData.ami}
+                  onChange={(e) => setFormData(prev => ({ ...prev, ami: e.target.value }))}
+                  className="form-input"
+                />
+              </div>
               
               {/* Tipo */}
               <div className="space-y-2">
