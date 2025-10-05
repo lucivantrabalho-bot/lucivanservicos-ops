@@ -90,6 +90,7 @@ class Pendencia(BaseModel):
 
 class PendenciaCreate(BaseModel):
     site: str
+    ami: Optional[str] = None  # Campo AMI opcional
     tipo: str
     subtipo: str
     observacoes: str
