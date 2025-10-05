@@ -597,16 +597,19 @@ export default function Dashboard() {
                             Editar
                           </Button>
                           
-                          <Button
-                            onClick={() => openDeleteModal(pendencia)}
-                            data-testid="delete-pendencia-btn"
-                            variant="outline"
-                            size="sm"
-                            className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Excluir
-                          </Button>
+                          {/* Apenas admin pode excluir */}
+                          {isAdmin && (
+                            <Button
+                              onClick={() => openDeleteModal(pendencia)}
+                              data-testid="delete-pendencia-btn"
+                              variant="outline"
+                              size="sm"
+                              className="btn-hover border-red-200 text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Excluir
+                            </Button>
+                          )}
                           
                           <Button
                             onClick={() => openFinalizeModal(pendencia)}
