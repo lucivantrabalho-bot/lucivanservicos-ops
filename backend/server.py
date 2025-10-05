@@ -121,6 +121,7 @@ class FormConfig(BaseModel):
 
 class PendenciaEdit(BaseModel):
     site: str
+    ami: Optional[str] = None  # Campo AMI opcional
     tipo: str
     subtipo: str
     observacoes: str
