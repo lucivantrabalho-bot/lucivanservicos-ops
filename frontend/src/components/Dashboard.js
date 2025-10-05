@@ -237,7 +237,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
               <ThemeToggle />
               <Button
                 onClick={() => navigate('/create')}
