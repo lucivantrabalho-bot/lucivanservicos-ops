@@ -31,6 +31,7 @@ export default function CreatePendencia() {
   
   const [formData, setFormData] = useState({
     site: '',
+    ami: '',
     tipo: '',
     subtipo: '',
     observacoes: ''
