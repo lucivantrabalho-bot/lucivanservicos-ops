@@ -70,6 +70,7 @@ class Token(BaseModel):
 class Pendencia(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     site: str
+    ami: Optional[str] = None  # Campo AMI
     data_hora: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     tipo: str  # "Energia" or "Arcon"
     subtipo: str  # Específico baseado no tipo
