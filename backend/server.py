@@ -808,11 +808,19 @@ async def upload_kml_file(
         
         await db.kml_data.insert_one(kml_data)
         
+        # Prepare return message
+        message = f"Arquivo KML processado com sucesso! {len(locations)} localizações encontradas."
+        if old_kml_files:
+            old_count = sum(len(kml.get("locations", [])) for kml in old_kml_files)
+            message += f" Dados anteriores substituídos ({old_count} localizações antigas removidas)."
+        
         return {
-            "message": f"Arquivo KML processado com sucesso! {len(locations)} localizações encontradas.",
+            "message": message,
             "kml_id": kml_data["id"],
             "total_locations": len(locations),
-            "locations": locations[:10]  # Return first 10 as preview
+            "locations": locations[:10],  # Return first 10 as preview
+            "replaced_old_data": len(old_kml_files) > 0,
+            "old_locations_count": sum(len(kml.get("locations", [])) for kml in old_kml_files) if old_kml_files else 0
         }
         
     except ET.ParseError as e:
