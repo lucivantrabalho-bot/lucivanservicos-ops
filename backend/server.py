@@ -786,7 +786,16 @@ async def upload_kml_file(
                 detail=f"Nenhuma localização válida encontrada no arquivo KML. Verifique se o arquivo contém elementos Placemark com coordenadas válidas. Debug: {debug_content}"
             )
         
-        # Save to database
+        # Remove old KML data before adding new one
+        old_kml_files = await db.kml_data.find({"status": "active"}).to_list(length=None)
+        if old_kml_files:
+            # Delete old KML data
+            await db.kml_data.delete_many({"status": "active"})
+            
+            # Also delete related observations for old locations
+            await db.location_observations.delete_many({})
+            
+        # Save new KML data to database
         kml_data = {
             "id": str(uuid.uuid4()),
             "filename": file.filename,
