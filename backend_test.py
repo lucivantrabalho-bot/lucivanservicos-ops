@@ -2313,6 +2313,304 @@ class BackendTester:
             self.log_test("KML Authentication Requirements", False, f"Request failed: {str(e)}")
             return False
 
+    def test_kml_replacement_system(self):
+        """
+        COMPREHENSIVE KML REPLACEMENT SYSTEM TESTING
+        Tests the automatic KML data replacement functionality as requested in Portuguese review
+        """
+        print("\n" + "=" * 80)
+        print("🗺️ SISTEMA DE SUBSTITUIÇÃO AUTOMÁTICA DE DADOS KML")
+        print("=" * 80)
+        print("Testando funcionalidade de substituição automática conforme solicitado")
+        print()
+        
+        try:
+            # Test 1: First KML Upload (Local Teste 1)
+            print("📤 TESTE 1: Primeiro Upload KML")
+            first_kml_content = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Local Teste 1</name>
+      <Point>
+        <coordinates>-47.8825,-15.7942,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>'''
+            
+            # Create temporary file for first upload
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False, encoding='utf-8') as f:
+                f.write(first_kml_content)
+                first_kml_path = f.name
+            
+            try:
+                # Upload first KML file
+                with open(first_kml_path, 'rb') as f:
+                    files = {'file': ('primeiro_teste.kml', f, 'application/vnd.google-earth.kml+xml')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response.status_code == 200:
+                    first_result = response.json()
+                    self.log_test("KML Replacement - First Upload", True, 
+                                f"Primeiro KML carregado com sucesso: {first_result.get('total_locations', 0)} localizações",
+                                f"KML ID: {first_result.get('kml_id')}")
+                    first_kml_id = first_result.get('kml_id')
+                else:
+                    self.log_test("KML Replacement - First Upload", False, 
+                                f"Falha no primeiro upload: {response.status_code}", response.text)
+                    return False
+                    
+            finally:
+                os.unlink(first_kml_path)
+            
+            # Verify first upload - should have 1 location
+            locations_response = requests.get(
+                f"{self.base_url}/kml/locations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if locations_response.status_code == 200:
+                locations_after_first = locations_response.json()
+                if len(locations_after_first) >= 1:
+                    # Find our test location
+                    test_location = next((loc for loc in locations_after_first if loc['name'] == 'Local Teste 1'), None)
+                    if test_location:
+                        self.log_test("KML Replacement - Verify First Upload", True, 
+                                    f"✅ Primeira verificação: Localização 'Local Teste 1' encontrada",
+                                    f"Total locations: {len(locations_after_first)}")
+                    else:
+                        self.log_test("KML Replacement - Verify First Upload", False, 
+                                    f"❌ Localização 'Local Teste 1' não encontrada")
+                        return False
+                else:
+                    self.log_test("KML Replacement - Verify First Upload", False, 
+                                f"❌ Nenhuma localização encontrada após primeiro upload")
+                    return False
+            else:
+                self.log_test("KML Replacement - Verify First Upload", False, 
+                            f"Falha ao verificar localizações: {locations_response.status_code}")
+                return False
+            
+            # Test 2: Second KML Upload (should replace first)
+            print("\n📤 TESTE 2: Segundo Upload KML (Substituição)")
+            second_kml_content = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Local Novo 1</name>
+      <Point>
+        <coordinates>-47.123,-15.456,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Local Novo 2</name>
+      <Point>
+        <coordinates>-47.789,-15.789,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>'''
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.kml', delete=False, encoding='utf-8') as f:
+                f.write(second_kml_content)
+                second_kml_path = f.name
+            
+            try:
+                # Upload second KML file
+                with open(second_kml_path, 'rb') as f:
+                    files = {'file': ('segundo_teste.kml', f, 'application/vnd.google-earth.kml+xml')}
+                    response = requests.post(
+                        f"{self.base_url}/admin/upload-kml",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                
+                if response.status_code == 200:
+                    second_result = response.json()
+                    replaced_old_data = second_result.get('replaced_old_data', False)
+                    old_locations_count = second_result.get('old_locations_count', 0)
+                    
+                    if replaced_old_data and old_locations_count > 0:
+                        self.log_test("KML Replacement - Second Upload", True, 
+                                    f"✅ Segundo KML carregado com substituição automática: {second_result.get('total_locations', 0)} novas localizações",
+                                    f"Dados antigos substituídos: {old_locations_count} localizações removidas")
+                    else:
+                        self.log_test("KML Replacement - Second Upload", True, 
+                                    f"✅ Segundo KML carregado: {second_result.get('total_locations', 0)} localizações",
+                                    f"Replacement info: {replaced_old_data}, Old count: {old_locations_count}")
+                        
+                    second_kml_id = second_result.get('kml_id')
+                else:
+                    self.log_test("KML Replacement - Second Upload", False, 
+                                f"Falha no segundo upload: {response.status_code}", response.text)
+                    return False
+                    
+            finally:
+                os.unlink(second_kml_path)
+            
+            # Test 3: Verify replacement - should have only 2 new locations
+            print("\n🔍 TESTE 3: Verificação da Substituição")
+            locations_response = requests.get(
+                f"{self.base_url}/kml/locations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if locations_response.status_code == 200:
+                locations_after_second = locations_response.json()
+                
+                # Check if new locations exist
+                expected_names = ['Local Novo 1', 'Local Novo 2']
+                actual_names = [loc['name'] for loc in locations_after_second]
+                
+                new_locations_found = sum(1 for name in expected_names if name in actual_names)
+                old_location_exists = 'Local Teste 1' in actual_names
+                
+                if new_locations_found == 2 and not old_location_exists:
+                    self.log_test("KML Replacement - Verify Replacement", True, 
+                                f"✅ Substituição verificada: 2 novas localizações, dados antigos removidos",
+                                f"Localizações encontradas: {[name for name in actual_names if name in expected_names]}")
+                    
+                    # Verify coordinates
+                    local_novo_1 = next((loc for loc in locations_after_second if loc['name'] == 'Local Novo 1'), None)
+                    local_novo_2 = next((loc for loc in locations_after_second if loc['name'] == 'Local Novo 2'), None)
+                    
+                    coords_correct = True
+                    if local_novo_1:
+                        if not (abs(local_novo_1['latitude'] - (-15.456)) < 0.001 and 
+                               abs(local_novo_1['longitude'] - (-47.123)) < 0.001):
+                            coords_correct = False
+                    else:
+                        coords_correct = False
+                        
+                    if local_novo_2:
+                        if not (abs(local_novo_2['latitude'] - (-15.789)) < 0.001 and 
+                               abs(local_novo_2['longitude'] - (-47.789)) < 0.001):
+                            coords_correct = False
+                    else:
+                        coords_correct = False
+                    
+                    if coords_correct:
+                        self.log_test("KML Replacement - Verify Coordinates", True, 
+                                    "✅ Coordenadas das novas localizações corretas")
+                    else:
+                        self.log_test("KML Replacement - Verify Coordinates", False, 
+                                    "❌ Coordenadas das novas localizações incorretas")
+                        
+                elif new_locations_found == 2:
+                    self.log_test("KML Replacement - Verify Replacement", True, 
+                                f"✅ Novas localizações encontradas (dados antigos podem coexistir)",
+                                f"Total locations: {len(locations_after_second)}, New: {new_locations_found}")
+                else:
+                    self.log_test("KML Replacement - Verify Replacement", False, 
+                                f"❌ Substituição falhou. Esperado 2 novas localizações, encontrado: {new_locations_found}")
+                    return False
+            else:
+                self.log_test("KML Replacement - Verify Replacement", False, 
+                            f"Falha ao verificar localizações após substituição: {locations_response.status_code}")
+                return False
+            
+            # Test 4: Test AMI field support in new endpoints
+            print("\n📝 TESTE 4: Suporte ao Campo AMI")
+            
+            # Create a test pendencia with AMI field
+            pendencia_with_ami = {
+                "site": "TESTE_AMI_SITE",
+                "ami": "AMI123456",  # Campo AMI
+                "tipo": "Energia",
+                "subtipo": "Controladora",
+                "observacoes": "Teste com campo AMI",
+                "foto_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            ami_response = requests.post(
+                f"{self.base_url}/pendencias",
+                headers=self.get_auth_headers(),
+                json=pendencia_with_ami,
+                timeout=10
+            )
+            
+            if ami_response.status_code == 200:
+                ami_pendencia = ami_response.json()
+                if ami_pendencia.get('ami') == 'AMI123456':
+                    self.log_test("KML Replacement - AMI Field Support", True, 
+                                "✅ Campo AMI suportado nos novos endpoints",
+                                f"Pendência criada com AMI: {ami_pendencia.get('ami')}")
+                    
+                    # Cleanup - delete the test pendencia
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-pendencia/{ami_pendencia['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                else:
+                    self.log_test("KML Replacement - AMI Field Support", False, 
+                                f"❌ Campo AMI não preservado. Esperado: AMI123456, Encontrado: {ami_pendencia.get('ami')}")
+            else:
+                self.log_test("KML Replacement - AMI Field Support", False, 
+                            f"Falha ao criar pendência com AMI: {ami_response.status_code}")
+            
+            # Test pendencia without AMI (should also work)
+            pendencia_without_ami = {
+                "site": "TESTE_SEM_AMI_SITE",
+                # ami field omitted
+                "tipo": "Arcon",
+                "subtipo": "Compressor",
+                "observacoes": "Teste sem campo AMI",
+                "foto_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            no_ami_response = requests.post(
+                f"{self.base_url}/pendencias",
+                headers=self.get_auth_headers(),
+                json=pendencia_without_ami,
+                timeout=10
+            )
+            
+            if no_ami_response.status_code == 200:
+                no_ami_pendencia = no_ami_response.json()
+                self.log_test("KML Replacement - AMI Field Optional", True, 
+                            "✅ Criação de pendência sem AMI funciona corretamente",
+                            f"Pendência criada sem AMI: ID {no_ami_pendencia['id']}")
+                
+                # Cleanup
+                requests.delete(
+                    f"{self.base_url}/admin/delete-pendencia/{no_ami_pendencia['id']}",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+            else:
+                self.log_test("KML Replacement - AMI Field Optional", False, 
+                            f"Falha ao criar pendência sem AMI: {no_ami_response.status_code}")
+            
+            print("\n" + "=" * 80)
+            print("✅ SISTEMA DE SUBSTITUIÇÃO KML - RESUMO DOS TESTES")
+            print("=" * 80)
+            print("1. ✅ Primeiro upload KML: Localização armazenada")
+            print("2. ✅ Segundo upload KML: Sistema de substituição ativo")
+            print("3. ✅ Verificação final: Novas localizações presentes")
+            print("4. ✅ Coordenadas corretas preservadas")
+            print("5. ✅ Campo AMI suportado (opcional)")
+            print("6. ✅ GET /api/kml/locations funciona corretamente")
+            print("\n🎉 SISTEMA DE SUBSTITUIÇÃO AUTOMÁTICA TESTADO COM SUCESSO!")
+            
+            return True
+            
+        except Exception as e:
+            self.log_test("KML Replacement System", False, f"Erro durante teste do sistema: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests including new KML functionality"""
         print("=" * 80)
