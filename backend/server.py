@@ -850,6 +850,179 @@ async def delete_kml_data(kml_id: str, admin_user: User = Depends(get_admin_user
     
     return {"message": "Dados KML excluídos com sucesso"}
 
+# Endpoints para gerenciamento de arquivos Excel por categoria
+EXCEL_CATEGORIES = ["CLIMA", "CONCESSIONARIA", "FCC", "GERADOR", "INVERSOR", "UPS"]
+
+@api_router.post("/admin/upload-excel/{category}")
+async def upload_excel_file(
+    category: str,
+    file: UploadFile = File(...),
+    admin_user: User = Depends(get_admin_user)
+):
+    import pandas as pd
+    import io
+    
+    # Validate category
+    if category.upper() not in EXCEL_CATEGORIES:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Categoria inválida. Categorias válidas: {', '.join(EXCEL_CATEGORIES)}"
+        )
+    
+    # Validate file extension
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Apenas arquivos Excel (.xlsx/.xls) são aceitos")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse Excel file
+        try:
+            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo Excel: {str(e)}")
+        
+        # Convert DataFrame to records
+        records = []
+        for index, row in df.iterrows():
+            record = {}
+            for col in df.columns:
+                # Clean column name
+                clean_col = str(col).strip()
+                value = row[col]
+                
+                # Handle NaN values
+                if pd.isna(value):
+                    record[clean_col] = ""
+                else:
+                    record[clean_col] = str(value).strip()
+            
+            records.append(record)
+        
+        if not records:
+            raise HTTPException(status_code=400, detail="Arquivo Excel está vazio ou não contém dados válidos")
+        
+        # Remove old data for this category
+        await db.excel_data.delete_many({"category": category.upper()})
+        
+        # Save new data
+        excel_data = {
+            "id": str(uuid.uuid4()),
+            "category": category.upper(),
+            "filename": file.filename,
+            "uploaded_by": admin_user.username,
+            "uploaded_at": datetime.now(timezone.utc),
+            "records": records,
+            "total_records": len(records),
+            "columns": list(df.columns),
+            "status": "active"
+        }
+        
+        await db.excel_data.insert_one(excel_data)
+        
+        return {
+            "message": f"Arquivo Excel da categoria {category.upper()} processado com sucesso! {len(records)} registros encontrados.",
+            "category": category.upper(),
+            "total_records": len(records),
+            "columns": list(df.columns),
+            "sample_records": records[:5]  # Return first 5 as preview
+        }
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo Excel: {str(e)}")
+
+@api_router.get("/admin/excel-data/{category}")
+async def get_excel_data_admin(
+    category: str,
+    admin_user: User = Depends(get_admin_user)
+):
+    if category.upper() not in EXCEL_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Categoria inválida")
+    
+    excel_data = await db.excel_data.find_one({"category": category.upper(), "status": "active"})
+    
+    if not excel_data:
+        return {
+            "category": category.upper(),
+            "has_data": False,
+            "message": f"Nenhum arquivo da categoria {category.upper()} foi carregado ainda"
+        }
+    
+    return {
+        "category": category.upper(),
+        "has_data": True,
+        "filename": excel_data["filename"],
+        "uploaded_by": excel_data["uploaded_by"],
+        "uploaded_at": excel_data["uploaded_at"],
+        "total_records": excel_data["total_records"],
+        "columns": excel_data["columns"],
+        "sample_records": excel_data["records"][:10]  # Return first 10 records
+    }
+
+@api_router.delete("/admin/excel-data/{category}")
+async def delete_excel_data(
+    category: str,
+    admin_user: User = Depends(get_admin_user)
+):
+    if category.upper() not in EXCEL_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Categoria inválida")
+    
+    result = await db.excel_data.delete_many({"category": category.upper()})
+    
+    return {
+        "message": f"Dados da categoria {category.upper()} excluídos com sucesso",
+        "deleted_count": result.deleted_count
+    }
+
+@api_router.get("/excel/search-site")
+async def search_site_data(
+    site: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Search data across all Excel categories for a specific site"""
+    if not site or len(site.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Site deve ter pelo menos 2 caracteres")
+    
+    site_lower = site.strip().lower()
+    results = {}
+    
+    # Search across all categories
+    for category in EXCEL_CATEGORIES:
+        excel_data = await db.excel_data.find_one({"category": category, "status": "active"})
+        
+        if excel_data:
+            matching_records = []
+            
+            # Search in all columns for the site name
+            for record in excel_data.get("records", []):
+                found_match = False
+                
+                # Check all columns for site match
+                for key, value in record.items():
+                    if isinstance(value, str) and site_lower in value.lower():
+                        found_match = True
+                        break
+                
+                if found_match:
+                    matching_records.append(record)
+            
+            if matching_records:
+                results[category] = {
+                    "filename": excel_data["filename"],
+                    "uploaded_at": excel_data["uploaded_at"],
+                    "columns": excel_data["columns"],
+                    "records": matching_records
+                }
+    
+    return {
+        "site": site,
+        "categories_found": len(results),
+        "data": results
+    }
+
 @api_router.get("/kml/search")
 async def search_kml_locations(
     query: str,
