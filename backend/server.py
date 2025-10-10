@@ -313,6 +313,7 @@ async def create_pendencia(pendencia_data: PendenciaCreate, current_user: User =
     
     pendencia = Pendencia(
         site=pendencia_data.site,
+        ami=pendencia_data.ami,  # Add AMI field
         tipo=pendencia_data.tipo,
         subtipo=pendencia_data.subtipo,
         observacoes=pendencia_data.observacoes,
