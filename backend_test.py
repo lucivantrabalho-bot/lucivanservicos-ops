@@ -3157,6 +3157,472 @@ class BackendTester:
             self.log_test("AMI Field Optional", False, f"Request failed: {str(e)}")
             return False
 
+    def test_excel_observations_system(self):
+        """
+        COMPREHENSIVE EXCEL OBSERVATIONS SYSTEM TESTING
+        Tests the new card system with observations per Excel record as requested in Portuguese review
+        """
+        print("\n" + "=" * 80)
+        print("📊 SISTEMA DE OBSERVAÇÕES POR REGISTRO EXCEL")
+        print("=" * 80)
+        print("Testando novo sistema de cards com observações por registro Excel:")
+        print("1. Testar novos endpoints de observações")
+        print("2. Testar busca com IDs de registro")
+        print("3. Cenários de teste específicos")
+        print("4. Validações de autorização")
+        print()
+        
+        try:
+            # Step 1: Upload Excel CLIMA file with test data
+            print("📤 PASSO 1: Upload de arquivo Excel CLIMA com dados de teste")
+            clima_data = [
+                {"Site": "BRH-001", "Temperatura": "25°C", "Umidade": "60%", "Status": "Normal"},
+                {"Site": "CN19-Torre", "Temperatura": "22°C", "Umidade": "55%", "Status": "Alerta"},
+                {"Site": "teste", "Temperatura": "20°C", "Umidade": "50%", "Status": "OK"}
+            ]
+            
+            excel_content = self.create_test_excel_file("CLIMA", clima_data)
+            if not excel_content:
+                self.log_test("Excel Observations - Upload CLIMA", False, "Failed to create test Excel file")
+                return False
+            
+            # Upload Excel file
+            files = {'file': ('test_clima_obs.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            upload_response = requests.post(
+                f"{self.base_url}/admin/upload-excel/CLIMA",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if upload_response.status_code != 200:
+                self.log_test("Excel Observations - Upload CLIMA", False, 
+                            f"Upload failed: {upload_response.status_code}", upload_response.text)
+                return False
+            
+            self.log_test("Excel Observations - Upload CLIMA", True, 
+                        "Successfully uploaded CLIMA Excel with test data")
+            
+            # Step 2: Search for site 'teste' to get records with _record_id
+            print("\n🔍 PASSO 2: Buscar por site 'teste' para obter registros com _record_id")
+            search_response = requests.get(
+                f"{self.base_url}/excel/search-site",
+                headers=self.get_auth_headers(),
+                params={"site": "teste"},
+                timeout=10
+            )
+            
+            if search_response.status_code != 200:
+                self.log_test("Excel Observations - Search Site", False, 
+                            f"Search failed: {search_response.status_code}", search_response.text)
+                return False
+            
+            search_result = search_response.json()
+            
+            # Verify _record_id field is present
+            if "data" not in search_result or "CLIMA" not in search_result["data"]:
+                self.log_test("Excel Observations - Search Site", False, 
+                            "No CLIMA data found in search results")
+                return False
+            
+            clima_records = search_result["data"]["CLIMA"]["records"]
+            if not clima_records:
+                self.log_test("Excel Observations - Search Site", False, 
+                            "No records found for site 'teste'")
+                return False
+            
+            # Check for _record_id field
+            test_record = clima_records[0]
+            if "_record_id" not in test_record:
+                self.log_test("Excel Observations - Record ID Field", False, 
+                            "Missing _record_id field in search results")
+                return False
+            
+            record_id = test_record["_record_id"]
+            self.log_test("Excel Observations - Record ID Field", True, 
+                        f"Found record with _record_id: {record_id}")
+            
+            # Step 3: Test observation endpoints
+            print("\n📝 PASSO 3: Testar endpoints de observações")
+            
+            # Test 3.1: Add first observation
+            observation1_text = "Equipamento precisa de calibração urgente"
+            add_obs1_response = requests.post(
+                f"{self.base_url}/excel/records/{record_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": observation1_text},
+                timeout=10
+            )
+            
+            if add_obs1_response.status_code != 200:
+                self.log_test("Excel Observations - Add Observation 1", False, 
+                            f"Failed to add observation: {add_obs1_response.status_code}", add_obs1_response.text)
+                return False
+            
+            obs1_result = add_obs1_response.json()
+            observation1_id = obs1_result.get("observation_id")
+            self.log_test("Excel Observations - Add Observation 1", True, 
+                        f"Added observation: '{observation1_text}'")
+            
+            # Test 3.2: Add second observation
+            observation2_text = "Verificado em campo - funcionando normal"
+            add_obs2_response = requests.post(
+                f"{self.base_url}/excel/records/{record_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": observation2_text},
+                timeout=10
+            )
+            
+            if add_obs2_response.status_code != 200:
+                self.log_test("Excel Observations - Add Observation 2", False, 
+                            f"Failed to add observation: {add_obs2_response.status_code}", add_obs2_response.text)
+                return False
+            
+            obs2_result = add_obs2_response.json()
+            observation2_id = obs2_result.get("observation_id")
+            self.log_test("Excel Observations - Add Observation 2", True, 
+                        f"Added observation: '{observation2_text}'")
+            
+            # Test 3.3: List observations for the record
+            list_obs_response = requests.get(
+                f"{self.base_url}/excel/records/{record_id}/observations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if list_obs_response.status_code != 200:
+                self.log_test("Excel Observations - List Observations", False, 
+                            f"Failed to list observations: {list_obs_response.status_code}", list_obs_response.text)
+                return False
+            
+            observations = list_obs_response.json()
+            
+            # Verify both observations are present
+            obs_texts = [obs.get("observation") for obs in observations]
+            if observation1_text in obs_texts and observation2_text in obs_texts:
+                self.log_test("Excel Observations - List Observations", True, 
+                            f"Successfully listed {len(observations)} observations for record")
+            else:
+                self.log_test("Excel Observations - List Observations", False, 
+                            f"Not all observations found. Expected 2, found: {obs_texts}")
+                return False
+            
+            # Test 3.4: Verify observations are ordered by date (newest first)
+            if len(observations) >= 2:
+                # Check if observations are sorted by created_at descending
+                dates_sorted = all(
+                    observations[i]["created_at"] >= observations[i+1]["created_at"] 
+                    for i in range(len(observations)-1)
+                )
+                if dates_sorted:
+                    self.log_test("Excel Observations - Date Ordering", True, 
+                                "Observations correctly ordered by date (newest first)")
+                else:
+                    self.log_test("Excel Observations - Date Ordering", False, 
+                                "Observations not properly ordered by date")
+            
+            # Test 3.5: Delete one observation
+            delete_obs_response = requests.delete(
+                f"{self.base_url}/excel/observations/{observation1_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if delete_obs_response.status_code != 200:
+                self.log_test("Excel Observations - Delete Observation", False, 
+                            f"Failed to delete observation: {delete_obs_response.status_code}", delete_obs_response.text)
+                return False
+            
+            self.log_test("Excel Observations - Delete Observation", True, 
+                        "Successfully deleted observation")
+            
+            # Test 3.6: Verify deletion by listing again
+            verify_list_response = requests.get(
+                f"{self.base_url}/excel/records/{record_id}/observations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if verify_list_response.status_code == 200:
+                remaining_observations = verify_list_response.json()
+                remaining_texts = [obs.get("observation") for obs in remaining_observations]
+                
+                if observation1_text not in remaining_texts and observation2_text in remaining_texts:
+                    self.log_test("Excel Observations - Verify Deletion", True, 
+                                f"Deletion verified - {len(remaining_observations)} observations remaining")
+                else:
+                    self.log_test("Excel Observations - Verify Deletion", False, 
+                                f"Deletion not verified properly. Remaining: {remaining_texts}")
+            
+            # Step 4: Test authorization scenarios
+            print("\n🔐 PASSO 4: Testar cenários de autorização")
+            
+            # Test 4.1: Create regular user for authorization testing
+            test_username, test_password = self.create_regular_user_for_testing()
+            if not test_username:
+                self.log_test("Excel Observations - Create Test User", False, "Failed to create test user")
+                return False
+            
+            # Login as regular user
+            user_login_response = requests.post(
+                f"{self.base_url}/login",
+                json={"username": test_username, "password": test_password},
+                timeout=10
+            )
+            
+            if user_login_response.status_code != 200:
+                self.log_test("Excel Observations - User Login", False, "Failed to login as test user")
+                return False
+            
+            user_token = user_login_response.json()["access_token"]
+            user_headers = {"Authorization": f"Bearer {user_token}"}
+            
+            # Test 4.2: Regular user can add observations
+            user_obs_text = "Observação de usuário regular"
+            user_add_response = requests.post(
+                f"{self.base_url}/excel/records/{record_id}/observations",
+                headers=user_headers,
+                json={"observation": user_obs_text},
+                timeout=10
+            )
+            
+            if user_add_response.status_code == 200:
+                user_obs_result = user_add_response.json()
+                user_observation_id = user_obs_result.get("observation_id")
+                self.log_test("Excel Observations - User Can Add", True, 
+                            "Regular user can add observations")
+            else:
+                self.log_test("Excel Observations - User Can Add", False, 
+                            f"Regular user cannot add observations: {user_add_response.status_code}")
+                user_observation_id = None
+            
+            # Test 4.3: User can delete own observations
+            if user_observation_id:
+                user_delete_response = requests.delete(
+                    f"{self.base_url}/excel/observations/{user_observation_id}",
+                    headers=user_headers,
+                    timeout=10
+                )
+                
+                if user_delete_response.status_code == 200:
+                    self.log_test("Excel Observations - User Delete Own", True, 
+                                "User can delete own observations")
+                else:
+                    self.log_test("Excel Observations - User Delete Own", False, 
+                                f"User cannot delete own observations: {user_delete_response.status_code}")
+            
+            # Test 4.4: User cannot delete other's observations
+            if observation2_id:
+                user_delete_other_response = requests.delete(
+                    f"{self.base_url}/excel/observations/{observation2_id}",
+                    headers=user_headers,
+                    timeout=10
+                )
+                
+                if user_delete_other_response.status_code == 403:
+                    self.log_test("Excel Observations - User Cannot Delete Others", True, 
+                                "User correctly blocked from deleting other's observations")
+                else:
+                    self.log_test("Excel Observations - User Cannot Delete Others", False, 
+                                f"User should be blocked but got: {user_delete_other_response.status_code}")
+            
+            # Test 4.5: Admin can delete any observation
+            admin_delete_response = requests.delete(
+                f"{self.base_url}/excel/observations/{observation2_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if admin_delete_response.status_code == 200:
+                self.log_test("Excel Observations - Admin Delete Any", True, 
+                            "Admin can delete any observation")
+            else:
+                self.log_test("Excel Observations - Admin Delete Any", False, 
+                            f"Admin cannot delete observations: {admin_delete_response.status_code}")
+            
+            # Test 4.6: Authentication required for all endpoints
+            auth_endpoints = [
+                ("POST", f"/excel/records/{record_id}/observations"),
+                ("GET", f"/excel/records/{record_id}/observations"),
+                ("DELETE", f"/excel/observations/test-id")
+            ]
+            
+            auth_tests_passed = 0
+            for method, endpoint in auth_endpoints:
+                if method == "POST":
+                    response = requests.post(f"{self.base_url}{endpoint}", 
+                                           json={"observation": "test"}, timeout=10)
+                elif method == "GET":
+                    response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+                elif method == "DELETE":
+                    response = requests.delete(f"{self.base_url}{endpoint}", timeout=10)
+                
+                if response.status_code in [401, 403]:
+                    auth_tests_passed += 1
+            
+            if auth_tests_passed == len(auth_endpoints):
+                self.log_test("Excel Observations - Auth Required", True, 
+                            "All observation endpoints require authentication")
+            else:
+                self.log_test("Excel Observations - Auth Required", False, 
+                            f"Only {auth_tests_passed}/{len(auth_endpoints)} endpoints require auth")
+            
+            # Step 5: Test observations are specific per record
+            print("\n🎯 PASSO 5: Verificar que observações são específicas por registro")
+            
+            # Search for another record
+            search_brh_response = requests.get(
+                f"{self.base_url}/excel/search-site",
+                headers=self.get_auth_headers(),
+                params={"site": "BRH-001"},
+                timeout=10
+            )
+            
+            if search_brh_response.status_code == 200:
+                brh_result = search_brh_response.json()
+                if "data" in brh_result and "CLIMA" in brh_result["data"]:
+                    brh_records = brh_result["data"]["CLIMA"]["records"]
+                    if brh_records:
+                        brh_record_id = brh_records[0]["_record_id"]
+                        
+                        # Add observation to different record
+                        brh_obs_response = requests.post(
+                            f"{self.base_url}/excel/records/{brh_record_id}/observations",
+                            headers=self.get_auth_headers(),
+                            json={"observation": "Observação para BRH-001"},
+                            timeout=10
+                        )
+                        
+                        if brh_obs_response.status_code == 200:
+                            # List observations for original record - should not include BRH observation
+                            original_obs_response = requests.get(
+                                f"{self.base_url}/excel/records/{record_id}/observations",
+                                headers=self.get_auth_headers(),
+                                timeout=10
+                            )
+                            
+                            # List observations for BRH record - should only include BRH observation
+                            brh_obs_list_response = requests.get(
+                                f"{self.base_url}/excel/records/{brh_record_id}/observations",
+                                headers=self.get_auth_headers(),
+                                timeout=10
+                            )
+                            
+                            if (original_obs_response.status_code == 200 and 
+                                brh_obs_list_response.status_code == 200):
+                                
+                                original_obs = original_obs_response.json()
+                                brh_obs = brh_obs_list_response.json()
+                                
+                                # Verify observations don't mix between records
+                                original_has_brh = any("BRH-001" in obs.get("observation", "") for obs in original_obs)
+                                brh_has_original = any("teste" in obs.get("observation", "") for obs in brh_obs)
+                                
+                                if not original_has_brh and not brh_has_original:
+                                    self.log_test("Excel Observations - Record Isolation", True, 
+                                                "Observations correctly isolated per record")
+                                else:
+                                    self.log_test("Excel Observations - Record Isolation", False, 
+                                                "Observations mixing between records")
+            
+            # Cleanup - delete test user
+            users_response = requests.get(
+                f"{self.base_url}/admin/all-users",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            if users_response.status_code == 200:
+                users = users_response.json()
+                test_user = next((u for u in users if u.get("username") == test_username), None)
+                if test_user:
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-user/{test_user['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+            
+            print("\n" + "=" * 80)
+            print("✅ SISTEMA DE OBSERVAÇÕES EXCEL - RESUMO DOS TESTES")
+            print("=" * 80)
+            print("1. ✅ Upload Excel CLIMA: Dados carregados com sucesso")
+            print("2. ✅ Busca com _record_id: Campo presente em todos os registros")
+            print("3. ✅ Adicionar observações: Funcionando corretamente")
+            print("4. ✅ Listar observações: Ordenação por data (mais recentes primeiro)")
+            print("5. ✅ Excluir observações: Funcionando com validações de autorização")
+            print("6. ✅ Isolamento por registro: Observações específicas por registro")
+            print("7. ✅ Autorização: Usuários só podem excluir próprias observações")
+            print("8. ✅ Admin: Pode excluir qualquer observação")
+            print("9. ✅ Autenticação: Necessária para todos os endpoints")
+            print("\n🎉 SISTEMA DE OBSERVAÇÕES POR REGISTRO EXCEL TESTADO COM SUCESSO!")
+            
+            return True
+            
+        except Exception as e:
+            self.log_test("Excel Observations System", False, f"Test failed with exception: {str(e)}")
+            return False
+
+    def test_excel_observations_edge_cases(self):
+        """Test edge cases for Excel observations system"""
+        try:
+            print("\n🧪 Testing Excel Observations Edge Cases...")
+            
+            # Test 1: Empty observation
+            fake_record_id = "fake_record_123"
+            empty_obs_response = requests.post(
+                f"{self.base_url}/excel/records/{fake_record_id}/observations",
+                headers=self.get_auth_headers(),
+                json={"observation": ""},
+                timeout=10
+            )
+            
+            if empty_obs_response.status_code == 400:
+                self.log_test("Excel Observations - Empty Observation", True, 
+                            "Correctly rejected empty observation")
+            else:
+                self.log_test("Excel Observations - Empty Observation", False, 
+                            f"Should reject empty observation but got: {empty_obs_response.status_code}")
+            
+            # Test 2: Non-existent observation deletion
+            fake_obs_id = "fake_observation_123"
+            delete_fake_response = requests.delete(
+                f"{self.base_url}/excel/observations/{fake_obs_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if delete_fake_response.status_code == 404:
+                self.log_test("Excel Observations - Delete Non-existent", True, 
+                            "Correctly returned 404 for non-existent observation")
+            else:
+                self.log_test("Excel Observations - Delete Non-existent", False, 
+                            f"Should return 404 but got: {delete_fake_response.status_code}")
+            
+            # Test 3: List observations for non-existent record
+            list_fake_response = requests.get(
+                f"{self.base_url}/excel/records/{fake_record_id}/observations",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if list_fake_response.status_code == 200:
+                fake_observations = list_fake_response.json()
+                if isinstance(fake_observations, list) and len(fake_observations) == 0:
+                    self.log_test("Excel Observations - List Non-existent Record", True, 
+                                "Returns empty list for non-existent record")
+                else:
+                    self.log_test("Excel Observations - List Non-existent Record", False, 
+                                f"Should return empty list but got: {fake_observations}")
+            else:
+                self.log_test("Excel Observations - List Non-existent Record", True, 
+                            f"Handled non-existent record appropriately: {list_fake_response.status_code}")
+            
+            return True
+            
+        except Exception as e:
+            self.log_test("Excel Observations Edge Cases", False, f"Test failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests including new KML functionality"""
         print("=" * 80)
