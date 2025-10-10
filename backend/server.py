@@ -43,7 +43,10 @@ api_router = APIRouter(prefix="/api")
 # Models
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    username: str
+    username: str  # CPF será usado como username
+    nome_completo: str
+    cpf: str
+    cn: str  # Código CN (ex: "12-13-14-15-16-17-18-19")
     hashed_password: str
     role: str = "USER"  # "USER" or "ADMIN"
     status: str = "PENDING"  # "PENDING", "APPROVED", "REJECTED"
