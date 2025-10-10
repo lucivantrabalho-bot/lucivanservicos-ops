@@ -3765,6 +3765,21 @@ class BackendTester:
         self.test_ami_field_optional()
         print()
         
+        # Test 7: Excel Observations System (NEW - as requested in Portuguese review)
+        print("📊 Testing Excel Observations System...")
+        print("Testing new card system with observations per Excel record:")
+        print("- POST /api/excel/records/{record_id}/observations")
+        print("- GET /api/excel/records/{record_id}/observations")
+        print("- DELETE /api/excel/observations/{observation_id}")
+        print("- Search with _record_id field verification")
+        print("- Authorization and authentication testing")
+        print()
+        
+        self.test_excel_observations_system()
+        print()
+        self.test_excel_observations_edge_cases()
+        print()
+        
         print("=" * 80)
         print("TEST SUMMARY")
         print("=" * 80)
