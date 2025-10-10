@@ -176,33 +176,56 @@ export default function SiteInfo() {
     }
   };
 
-  const renderTable = (records, columns) => {
+  const renderRecordCards = (records, columns, category) => {
     if (!records || records.length === 0) return null;
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700">
-              {columns.map((col, index) => (
-                <th key={index} className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((record, recordIndex) => (
-              <tr key={recordIndex} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">
-                {columns.map((col, colIndex) => (
-                  <td key={colIndex} className="py-3 px-4 text-slate-600 dark:text-slate-300">
-                    {record[col] || '-'}
-                  </td>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {records.map((record, recordIndex) => {
+          const recordId = record._record_id || `${category}_${recordIndex}`;
+          
+          return (
+            <Card key={recordIndex} className="glass border-l-4 border-l-blue-500">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Registro #{recordIndex + 1}
+                  </CardTitle>
+                  <Button
+                    onClick={() => openObservationModal(record, recordId)}
+                    variant="outline"
+                    size="sm"
+                    className="btn-hover border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
+                  >
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    Observações
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-3">
+                {columns.filter(col => col !== '_record_id').map((col, colIndex) => (
+                  <div key={colIndex} className="flex flex-col sm:flex-row sm:justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                      {col}:
+                    </span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100 sm:text-right sm:max-w-[60%] break-words">
+                      {record[col] || '-'}
+                    </span>
+                  </div>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                
+                {/* Quick info about observations */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    <span>Clique em "Observações" para adicionar suas anotações</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   };
