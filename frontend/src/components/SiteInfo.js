@@ -176,50 +176,160 @@ export default function SiteInfo() {
     }
   };
 
+  // State for expanded cards
+  const [expandedCards, setExpandedCards] = useState(new Set());
+
+  const toggleCardExpansion = (cardKey) => {
+    const newExpanded = new Set(expandedCards);
+    if (newExpanded.has(cardKey)) {
+      newExpanded.delete(cardKey);
+    } else {
+      newExpanded.add(cardKey);
+    }
+    setExpandedCards(newExpanded);
+  };
+
+  const getMainFields = (record, columns) => {
+    // Priority order for main fields to show as TAGs
+    const priorityFields = ['site', 'nome', 'local', 'codigo', 'id', 'tag', 'equipamento', 'tipo', 'status'];
+    
+    // Find main fields based on priority and available columns
+    const mainFields = [];
+    const availableColumns = columns.filter(col => col !== '_record_id');
+    
+    // First, add fields that match priority order
+    for (const priority of priorityFields) {
+      for (const col of availableColumns) {
+        if (col.toLowerCase().includes(priority)) {
+          mainFields.push(col);
+          break; // Only add one field per priority type
+        }
+      }
+    }
+    
+    // If we have less than 3 main fields, add first available columns
+    while (mainFields.length < 3 && mainFields.length < availableColumns.length) {
+      for (const col of availableColumns) {
+        if (!mainFields.includes(col)) {
+          mainFields.push(col);
+          break;
+        }
+      }
+    }
+    
+    return mainFields.slice(0, 3); // Maximum 3 main fields as tags
+  };
+
   const renderRecordCards = (records, columns, category) => {
     if (!records || records.length === 0) return null;
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {records.map((record, recordIndex) => {
           const recordId = record._record_id || `${category}_${recordIndex}`;
+          const cardKey = `${category}_${recordIndex}`;
+          const isExpanded = expandedCards.has(cardKey);
+          const mainFields = getMainFields(record, columns);
+          const allFields = columns.filter(col => col !== '_record_id');
+          const additionalFields = allFields.filter(col => !mainFields.includes(col));
           
           return (
-            <Card key={recordIndex} className="glass border-l-4 border-l-blue-500">
+            <Card key={recordIndex} className="glass border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Registro #{recordIndex + 1}
+                  <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center">
+                    <Database className="w-4 h-4 mr-2 text-blue-500" />
+                    {category} #{recordIndex + 1}
                   </CardTitle>
-                  <Button
-                    onClick={() => openObservationModal(record, recordId)}
-                    variant="outline"
-                    size="sm"
-                    className="btn-hover border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
-                  >
-                    <MessageSquare className="w-3 h-3 mr-1" />
-                    Observações
-                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {additionalFields.length > 0 && (
+                      <Button
+                        onClick={() => toggleCardExpansion(cardKey)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-6 w-6 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        {isExpanded ? (
+                          <Eye className="w-3 h-3" />
+                        ) : (
+                          <Plus className="w-3 h-3" />
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => openObservationModal(record, recordId)}
+                      variant="outline"
+                      size="sm"
+                      className="btn-hover border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      Obs
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               
               <CardContent className="space-y-3">
-                {columns.filter(col => col !== '_record_id').map((col, colIndex) => (
-                  <div key={colIndex} className="flex flex-col sm:flex-row sm:justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                      {col}:
-                    </span>
-                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100 sm:text-right sm:max-w-[60%] break-words">
-                      {record[col] || '-'}
-                    </span>
+                {/* Main Fields - Always Visible as TAGs */}
+                <div className="space-y-2">
+                  {mainFields.map((col, colIndex) => (
+                    <div key={colIndex} className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-2 border border-blue-100 dark:border-blue-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                          {col}
+                        </span>
+                        <span className="text-sm font-bold text-blue-900 dark:text-blue-100 text-right break-words max-w-[70%]">
+                          {record[col] || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Additional Fields - Show/Hide Toggle */}
+                {additionalFields.length > 0 && (
+                  <div className="space-y-2">
+                    {isExpanded && (
+                      <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-2">
+                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Informações Adicionais:
+                          </span>
+                        </div>
+                        {additionalFields.map((col, colIndex) => (
+                          <div key={colIndex} className="bg-slate-50 dark:bg-slate-800 rounded p-2">
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                                {col}:
+                              </span>
+                              <span className="text-sm text-slate-900 dark:text-slate-100 break-words">
+                                {record[col] || '-'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {!isExpanded && additionalFields.length > 0 && (
+                      <Button
+                        onClick={() => toggleCardExpansion(cardKey)}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 border border-dashed border-slate-300 dark:border-slate-600 hover:border-solid"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Ver {additionalFields.length} campo(s) adicional(ais)
+                      </Button>
+                    )}
                   </div>
-                ))}
+                )}
                 
                 {/* Quick info about observations */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center text-xs text-slate-400 dark:text-slate-500">
                     <MessageSquare className="w-3 h-3 mr-1" />
-                    <span>Clique em "Observações" para adicionar suas anotações</span>
+                    <span>Clique em "Obs" para suas anotações</span>
                   </div>
                 </div>
               </CardContent>
