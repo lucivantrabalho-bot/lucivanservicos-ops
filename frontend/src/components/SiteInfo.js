@@ -63,6 +63,9 @@ export default function SiteInfo() {
     observations: []
   });
   const [newObservation, setNewObservation] = useState('');
+  
+  // State for expanded cards
+  const [expandedCards, setExpandedCards] = useState(new Set());
 
   const searchSiteData = async () => {
     if (!searchTerm || searchTerm.length < 2) {
