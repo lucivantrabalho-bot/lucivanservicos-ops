@@ -97,6 +97,79 @@ export default function SiteInfo() {
     setError('');
   };
 
+  // Observation functions
+  const openObservationModal = async (record, recordId) => {
+    setObservationModal({
+      isOpen: true,
+      record: record,
+      recordId: recordId,
+      observations: []
+    });
+    
+    // Load existing observations
+    try {
+      const response = await axios.get(`${API_BASE}/excel/records/${recordId}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+    } catch (err) {
+      console.error('Error loading observations:', err);
+    }
+  };
+
+  const closeObservationModal = () => {
+    setObservationModal({
+      isOpen: false,
+      record: null,
+      recordId: '',
+      observations: []
+    });
+    setNewObservation('');
+  };
+
+  const addObservation = async () => {
+    if (!newObservation.trim()) {
+      return;
+    }
+
+    try {
+      await axios.post(`${API_BASE}/excel/records/${observationModal.recordId}/observations`, {
+        observation: newObservation.trim()
+      });
+
+      // Reload observations
+      const response = await axios.get(`${API_BASE}/excel/records/${observationModal.recordId}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+      
+      setNewObservation('');
+    } catch (err) {
+      console.error('Error adding observation:', err);
+      setError('Erro ao adicionar observação');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const deleteObservation = async (observationId) => {
+    try {
+      await axios.delete(`${API_BASE}/excel/observations/${observationId}`);
+      
+      // Reload observations
+      const response = await axios.get(`${API_BASE}/excel/records/${observationModal.recordId}/observations`);
+      setObservationModal(prev => ({
+        ...prev,
+        observations: response.data || []
+      }));
+    } catch (err) {
+      console.error('Error deleting observation:', err);
+      setError('Erro ao excluir observação');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const renderTable = (records, columns) => {
     if (!records || records.length === 0) return null;
 
