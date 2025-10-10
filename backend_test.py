@@ -3623,6 +3623,468 @@ class BackendTester:
             self.log_test("Excel Observations Edge Cases", False, f"Test failed: {str(e)}")
             return False
 
+    def create_excel_test_file(self, category, data):
+        """Create a test Excel file for the specified category"""
+        try:
+            # Create DataFrame
+            df = pd.DataFrame(data)
+            
+            # Create Excel file in memory
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Sheet1')
+            
+            excel_buffer.seek(0)
+            return excel_buffer.getvalue()
+            
+        except Exception as e:
+            self.log_test(f"Create Excel File - {category}", False, f"Failed to create Excel file: {str(e)}")
+            return None
+
+    def test_concessionaria_upload_specific(self):
+        """
+        SPECIFIC TEST FOR CONCESSIONARIA CATEGORY UPLOAD ISSUE
+        Tests the exact scenario described in the Portuguese review request
+        """
+        print("\n" + "=" * 80)
+        print("🔍 INVESTIGAÇÃO ESPECÍFICA - UPLOAD CATEGORIA CONCESSIONARIA")
+        print("=" * 80)
+        print("Testando problema específico do upload da categoria CONCESSIONARIA")
+        print()
+        
+        try:
+            # Create specific CONCESSIONARIA test data as requested
+            concessionaria_data = [
+                {
+                    "Site": "BRH-001",
+                    "Concessionaria": "CELPE", 
+                    "Voltagem": "220V",
+                    "Contrato": "12345",
+                    "Status": "Ativo"
+                },
+                {
+                    "Site": "CN19-Torre",
+                    "Concessionaria": "COELBA",
+                    "Voltagem": "380V", 
+                    "Contrato": "67890",
+                    "Status": "Ativo"
+                },
+                {
+                    "Site": "Teste-Site",
+                    "Concessionaria": "CEMIG",
+                    "Voltagem": "220V",
+                    "Contrato": "11111", 
+                    "Status": "Pendente"
+                }
+            ]
+            
+            # Create Excel file
+            excel_content = self.create_excel_test_file("CONCESSIONARIA", concessionaria_data)
+            if not excel_content:
+                self.log_test("CONCESSIONARIA Upload Test", False, "Failed to create test Excel file")
+                return False
+            
+            # Test CONCESSIONARIA upload specifically
+            files = {
+                'file': ('test_concessionaria.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            }
+            
+            print("📤 Testando upload CONCESSIONARIA...")
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/CONCESSIONARIA",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                self.log_test("CONCESSIONARIA Upload", True, 
+                            f"✅ CONCESSIONARIA upload successful: {result.get('total_records', 0)} records",
+                            f"Message: {result.get('message', 'No message')}")
+                
+                # Verify data was saved correctly
+                verify_response = requests.get(
+                    f"{self.base_url}/admin/excel-data/CONCESSIONARIA",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if verify_response.status_code == 200:
+                    verify_data = verify_response.json()
+                    if verify_data.get("has_data", False):
+                        saved_records = verify_data.get("total_records", 0)
+                        columns = verify_data.get("columns", [])
+                        sample_records = verify_data.get("sample_records", [])
+                        
+                        self.log_test("CONCESSIONARIA Verification", True,
+                                    f"✅ Data verified: {saved_records} records saved",
+                                    f"Columns: {columns}, Sample: {sample_records[0] if sample_records else 'No samples'}")
+                        
+                        # Test search functionality with CONCESSIONARIA data
+                        search_response = requests.get(
+                            f"{self.base_url}/excel/search-site?site=BRH-001",
+                            headers=self.get_auth_headers(),
+                            timeout=10
+                        )
+                        
+                        if search_response.status_code == 200:
+                            search_data = search_response.json()
+                            concessionaria_found = "CONCESSIONARIA" in search_data.get("data", {})
+                            
+                            if concessionaria_found:
+                                self.log_test("CONCESSIONARIA Search Test", True,
+                                            "✅ CONCESSIONARIA data found in search results")
+                                return True
+                            else:
+                                self.log_test("CONCESSIONARIA Search Test", False,
+                                            "❌ CONCESSIONARIA data NOT found in search results",
+                                            f"Categories found: {list(search_data.get('data', {}).keys())}")
+                                return False
+                        else:
+                            self.log_test("CONCESSIONARIA Search Test", False,
+                                        f"Search failed: {search_response.status_code}")
+                            return False
+                    else:
+                        self.log_test("CONCESSIONARIA Verification", False,
+                                    "❌ No data found after upload", verify_data)
+                        return False
+                else:
+                    self.log_test("CONCESSIONARIA Verification", False,
+                                f"Verification failed: {verify_response.status_code}")
+                    return False
+            else:
+                # This is the critical failure case
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get("detail", error_detail)
+                except:
+                    pass
+                
+                self.log_test("CONCESSIONARIA Upload", False,
+                            f"🚨 CONCESSIONARIA upload FAILED: Status {response.status_code}",
+                            f"Error: {error_detail}")
+                
+                print(f"\n🚨 PROBLEMA IDENTIFICADO COM CONCESSIONARIA:")
+                print(f"   Status Code: {response.status_code}")
+                print(f"   Error Detail: {error_detail}")
+                print(f"   Response Headers: {dict(response.headers)}")
+                
+                return False
+                
+        except Exception as e:
+            self.log_test("CONCESSIONARIA Upload Test", False, f"Test failed with exception: {str(e)}")
+            return False
+
+    def test_all_categories_comparison(self):
+        """
+        Test all 6 categories to compare CONCESSIONARIA vs others
+        """
+        print("\n" + "=" * 80)
+        print("🔍 TESTE COMPARATIVO - TODAS AS 6 CATEGORIAS")
+        print("=" * 80)
+        print("Testando todas as categorias para identificar diferenças")
+        print()
+        
+        categories_data = {
+            "CLIMA": [
+                {"Site": "BRH-001", "Temperatura": "25°C", "Umidade": "60%", "Status": "Normal"},
+                {"Site": "CN19-Torre", "Temperatura": "22°C", "Umidade": "55%", "Status": "Alerta"}
+            ],
+            "CONCESSIONARIA": [
+                {"Site": "BRH-001", "Concessionaria": "CELPE", "Voltagem": "220V", "Contrato": "12345", "Status": "Ativo"},
+                {"Site": "CN19-Torre", "Concessionaria": "COELBA", "Voltagem": "380V", "Contrato": "67890", "Status": "Ativo"}
+            ],
+            "FCC": [
+                {"Site": "BRH-001", "Equipamento": "FCC-001", "Modelo": "Motorola", "Status": "Operacional"},
+                {"Site": "CN19-Torre", "Equipamento": "FCC-002", "Modelo": "Nokia", "Status": "Manutenção"}
+            ],
+            "GERADOR": [
+                {"Site": "BRH-001", "Modelo": "CAT 200kW", "Combustivel": "Diesel", "Status": "Ativo"},
+                {"Site": "CN19-Torre", "Modelo": "Cummins 150kW", "Combustivel": "Diesel", "Status": "Manutenção"}
+            ],
+            "INVERSOR": [
+                {"Site": "BRH-001", "Modelo": "APC 5kVA", "Tensao": "220V", "Status": "Normal"},
+                {"Site": "CN19-Torre", "Modelo": "Schneider 3kVA", "Tensao": "110V", "Status": "Alerta"}
+            ],
+            "UPS": [
+                {"Site": "BRH-001", "Modelo": "APC Smart-UPS", "Capacidade": "3000VA", "Status": "Online"},
+                {"Site": "CN19-Torre", "Modelo": "Eaton 5P", "Capacidade": "1500VA", "Status": "Bateria"}
+            ]
+        }
+        
+        results = {}
+        
+        for category, data in categories_data.items():
+            print(f"\n📤 Testando categoria: {category}")
+            
+            try:
+                # Create Excel file
+                excel_content = self.create_excel_test_file(category, data)
+                if not excel_content:
+                    results[category] = {"success": False, "error": "Failed to create Excel file"}
+                    continue
+                
+                # Upload file
+                files = {
+                    'file': (f'test_{category.lower()}.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                }
+                
+                response = requests.post(
+                    f"{self.base_url}/admin/upload-excel/{category}",
+                    headers=self.get_auth_headers(),
+                    files=files,
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    results[category] = {
+                        "success": True,
+                        "records": result.get("total_records", 0),
+                        "message": result.get("message", "")
+                    }
+                    self.log_test(f"Category Upload - {category}", True,
+                                f"✅ {category} upload successful: {result.get('total_records', 0)} records")
+                else:
+                    error_detail = response.text
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get("detail", error_detail)
+                    except:
+                        pass
+                    
+                    results[category] = {
+                        "success": False,
+                        "status_code": response.status_code,
+                        "error": error_detail
+                    }
+                    self.log_test(f"Category Upload - {category}", False,
+                                f"❌ {category} upload failed: Status {response.status_code}",
+                                f"Error: {error_detail}")
+                    
+            except Exception as e:
+                results[category] = {"success": False, "error": f"Exception: {str(e)}"}
+                self.log_test(f"Category Upload - {category}", False, f"Exception: {str(e)}")
+        
+        # Summary
+        print(f"\n" + "=" * 80)
+        print("📊 RESUMO DOS TESTES POR CATEGORIA")
+        print("=" * 80)
+        
+        successful_categories = []
+        failed_categories = []
+        
+        for category, result in results.items():
+            if result["success"]:
+                successful_categories.append(category)
+                print(f"✅ {category}: SUCCESS - {result.get('records', 0)} records")
+            else:
+                failed_categories.append(category)
+                print(f"❌ {category}: FAILED - {result.get('error', 'Unknown error')}")
+        
+        print(f"\n📈 Categorias que funcionam: {len(successful_categories)}/6")
+        print(f"📉 Categorias com problema: {len(failed_categories)}/6")
+        
+        if "CONCESSIONARIA" in failed_categories:
+            print(f"\n🚨 CONCESSIONARIA está entre as categorias com problema!")
+            print(f"   Outras categorias com problema: {[c for c in failed_categories if c != 'CONCESSIONARIA']}")
+        elif "CONCESSIONARIA" in successful_categories:
+            print(f"\n✅ CONCESSIONARIA funcionou corretamente!")
+            if failed_categories:
+                print(f"   Mas outras categorias falharam: {failed_categories}")
+        
+        return len(failed_categories) == 0
+
+    def test_sequential_category_testing(self):
+        """
+        Test categories sequentially as requested:
+        1. CLIMA (should work)
+        2. CONCESSIONARIA (investigate failure)  
+        3. Others for comparison
+        """
+        print("\n" + "=" * 80)
+        print("🔍 TESTE SEQUENCIAL CONFORME SOLICITADO")
+        print("=" * 80)
+        print("1. Upload CLIMA (deve funcionar)")
+        print("2. Upload CONCESSIONARIA (investigar falha)")
+        print("3. Upload outras categorias para comparar")
+        print()
+        
+        # Step 1: Test CLIMA first (should work)
+        print("📤 PASSO 1: Testando CLIMA...")
+        clima_data = [
+            {"Site": "BRH-001", "Temperatura": "25°C", "Umidade": "60%", "Status": "Normal"},
+            {"Site": "CN19-Torre", "Temperatura": "22°C", "Umidade": "55%", "Status": "Alerta"}
+        ]
+        
+        clima_success = self.test_single_category_upload("CLIMA", clima_data)
+        
+        # Step 2: Test CONCESSIONARIA (investigate failure)
+        print("\n📤 PASSO 2: Testando CONCESSIONARIA (investigação detalhada)...")
+        concessionaria_success = self.test_concessionaria_upload_specific()
+        
+        # Step 3: Test other categories for comparison
+        print("\n📤 PASSO 3: Testando outras categorias para comparação...")
+        other_categories = {
+            "FCC": [
+                {"Site": "BRH-001", "Equipamento": "FCC-001", "Modelo": "Motorola", "Status": "Operacional"},
+                {"Site": "CN19-Torre", "Equipamento": "FCC-002", "Modelo": "Nokia", "Status": "Manutenção"}
+            ],
+            "GERADOR": [
+                {"Site": "BRH-001", "Modelo": "CAT 200kW", "Combustivel": "Diesel", "Status": "Ativo"},
+                {"Site": "CN19-Torre", "Modelo": "Cummins 150kW", "Combustivel": "Diesel", "Status": "Manutenção"}
+            ],
+            "INVERSOR": [
+                {"Site": "BRH-001", "Modelo": "APC 5kVA", "Tensao": "220V", "Status": "Normal"},
+                {"Site": "CN19-Torre", "Modelo": "Schneider 3kVA", "Tensao": "110V", "Status": "Alerta"}
+            ],
+            "UPS": [
+                {"Site": "BRH-001", "Modelo": "APC Smart-UPS", "Capacidade": "3000VA", "Status": "Online"},
+                {"Site": "CN19-Torre", "Modelo": "Eaton 5P", "Capacidade": "1500VA", "Status": "Bateria"}
+            ]
+        }
+        
+        other_results = {}
+        for category, data in other_categories.items():
+            other_results[category] = self.test_single_category_upload(category, data)
+        
+        # Final analysis
+        print(f"\n" + "=" * 80)
+        print("📊 ANÁLISE FINAL DOS RESULTADOS SEQUENCIAIS")
+        print("=" * 80)
+        print(f"✅ CLIMA funcionou: {'SIM' if clima_success else 'NÃO'}")
+        print(f"🔍 CONCESSIONARIA funcionou: {'SIM' if concessionaria_success else 'NÃO'}")
+        
+        for category, success in other_results.items():
+            print(f"📋 {category} funcionou: {'SIM' if success else 'NÃO'}")
+        
+        if not concessionaria_success:
+            print(f"\n🚨 PROBLEMA CONFIRMADO COM CONCESSIONARIA!")
+            working_categories = [cat for cat, success in other_results.items() if success]
+            if clima_success:
+                working_categories.insert(0, "CLIMA")
+            
+            print(f"   Categorias que funcionam: {working_categories}")
+            print(f"   CONCESSIONARIA é específica ou há padrão?")
+        else:
+            print(f"\n✅ CONCESSIONARIA funcionou corretamente!")
+        
+        return concessionaria_success
+
+    def test_single_category_upload(self, category, data):
+        """Helper method to test upload of a single category"""
+        try:
+            excel_content = self.create_excel_test_file(category, data)
+            if not excel_content:
+                return False
+            
+            files = {
+                'file': (f'test_{category.lower()}.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/{category}",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                self.log_test(f"Single Category Upload - {category}", True,
+                            f"✅ {category}: {result.get('total_records', 0)} records uploaded")
+                return True
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get("detail", error_detail)
+                except:
+                    pass
+                
+                self.log_test(f"Single Category Upload - {category}", False,
+                            f"❌ {category} failed: Status {response.status_code}",
+                            f"Error: {error_detail}")
+                return False
+                
+        except Exception as e:
+            self.log_test(f"Single Category Upload - {category}", False, f"Exception: {str(e)}")
+            return False
+
+    def run_concessionaria_investigation(self):
+        """
+        Main method to run the CONCESSIONARIA investigation as requested
+        """
+        print("=" * 80)
+        print("🔍 INVESTIGAÇÃO PROBLEMA CONCESSIONARIA - CONFORME SOLICITADO")
+        print("=" * 80)
+        print(f"Testing against: {self.base_url}")
+        print("Investigando problema específico do upload da categoria CONCESSIONARIA")
+        print()
+        
+        # Step 1: Login as admin
+        if not self.login_admin():
+            print("❌ Cannot proceed without admin authentication")
+            return False
+        
+        print()
+        
+        # Step 2: Run the specific CONCESSIONARIA investigation
+        print("🔍 EXECUTANDO INVESTIGAÇÃO CONFORME SOLICITADO:")
+        print("1. Testar upload CONCESSIONARIA especificamente")
+        print("2. Verificar se há diferenças no processamento vs outras categorias")
+        print("3. Testar com arquivo Excel simples da categoria CONCESSIONARIA")
+        print("4. Testar todas as 6 categorias")
+        print("5. Verificar logs de erro")
+        print("6. Testar sequencialmente")
+        print()
+        
+        # Test 1: Specific CONCESSIONARIA test
+        concessionaria_success = self.test_concessionaria_upload_specific()
+        
+        # Test 2: All categories comparison
+        all_categories_success = self.test_all_categories_comparison()
+        
+        # Test 3: Sequential testing
+        sequential_success = self.test_sequential_category_testing()
+        
+        # Final summary
+        print("\n" + "=" * 80)
+        print("📊 RESUMO FINAL DA INVESTIGAÇÃO CONCESSIONARIA")
+        print("=" * 80)
+        
+        total_tests = len(self.test_results)
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        failed_tests = total_tests - passed_tests
+        
+        print(f"Total de testes executados: {total_tests}")
+        print(f"✅ Testes que passaram: {passed_tests}")
+        print(f"❌ Testes que falharam: {failed_tests}")
+        print(f"📊 Taxa de sucesso: {(passed_tests/total_tests*100):.1f}%")
+        
+        # Specific CONCESSIONARIA analysis
+        concessionaria_tests = [r for r in self.test_results if "CONCESSIONARIA" in r["test"]]
+        concessionaria_passed = sum(1 for r in concessionaria_tests if r["success"])
+        
+        print(f"\n🔍 ANÁLISE ESPECÍFICA CONCESSIONARIA:")
+        print(f"   Testes CONCESSIONARIA: {len(concessionaria_tests)}")
+        print(f"   Sucessos CONCESSIONARIA: {concessionaria_passed}")
+        print(f"   Falhas CONCESSIONARIA: {len(concessionaria_tests) - concessionaria_passed}")
+        
+        if concessionaria_passed == len(concessionaria_tests):
+            print(f"   ✅ RESULTADO: CONCESSIONARIA funcionando corretamente!")
+        else:
+            print(f"   🚨 RESULTADO: PROBLEMA CONFIRMADO com CONCESSIONARIA!")
+            
+            # Show failed CONCESSIONARIA tests
+            failed_concessionaria = [r for r in concessionaria_tests if not r["success"]]
+            for failed_test in failed_concessionaria:
+                print(f"      ❌ {failed_test['test']}: {failed_test['message']}")
+        
+        return concessionaria_success and all_categories_success and sequential_success
+
     def run_all_tests(self):
         """Run all backend tests including new KML functionality"""
         print("=" * 80)
