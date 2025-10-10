@@ -68,6 +68,12 @@ export default function AdminPanel() {
   const [kmlUploading, setKmlUploading] = useState(false);
   const [kmlFile, setKmlFile] = useState(null);
 
+  // Estados para Excel
+  const [excelData, setExcelData] = useState({});
+  const [excelUploading, setExcelUploading] = useState({});
+  const [excelFiles, setExcelFiles] = useState({});
+  const excelCategories = ['CLIMA', 'CONCESSIONARIA', 'FCC', 'GERADOR', 'INVERSOR', 'UPS'];
+
   // Redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
