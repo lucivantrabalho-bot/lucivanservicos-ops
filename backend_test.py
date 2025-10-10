@@ -13,6 +13,8 @@ import requests
 import json
 import sys
 from datetime import datetime
+import pandas as pd
+import io
 
 # Configuration
 BASE_URL = "https://pendency-hub.preview.emergentagent.com/api"
