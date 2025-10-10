@@ -1064,7 +1064,7 @@ async def get_excel_record_observations(
     """Get all observations for a specific Excel record"""
     observations = await db.excel_record_observations.find({
         "record_id": record_id
-    }).sort("created_at", -1).to_list(length=None)
+    }, {"_id": 0}).sort("created_at", -1).to_list(length=None)
     
     return observations
 
