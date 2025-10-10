@@ -278,6 +278,15 @@ export default function Dashboard() {
                 Localizações
               </Button>
 
+              <Button
+                onClick={() => navigate('/site-info')}
+                data-testid="site-info-btn"
+                className="btn-hover bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                Info do Site
+              </Button>
+
               {isAdmin && (
                 <Button
                   onClick={() => navigate('/reports')}
