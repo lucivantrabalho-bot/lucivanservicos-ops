@@ -16,7 +16,13 @@ import {
   Cpu,
   Wind,
   Power,
-  HardDrive
+  HardDrive,
+  MessageSquare,
+  Plus,
+  Trash2,
+  User,
+  Eye,
+  Edit3
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
