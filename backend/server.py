@@ -1024,6 +1024,66 @@ async def search_site_data(
         "data": results
     }
 
+@api_router.post("/excel/records/{record_id}/observations")
+async def add_excel_record_observation(
+    record_id: str,
+    observation_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Add user observation to a specific Excel record"""
+    observation_text = observation_data.get("observation", "").strip()
+    
+    if not observation_text:
+        raise HTTPException(status_code=400, detail="Observação não pode estar vazia")
+    
+    # Create observation record
+    observation = {
+        "id": str(uuid.uuid4()),
+        "record_id": record_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "observation": observation_text,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.excel_record_observations.insert_one(observation)
+    
+    return {
+        "message": "Observação adicionada com sucesso",
+        "observation_id": observation["id"]
+    }
+
+@api_router.get("/excel/records/{record_id}/observations")
+async def get_excel_record_observations(
+    record_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all observations for a specific Excel record"""
+    observations = await db.excel_record_observations.find({
+        "record_id": record_id
+    }).sort("created_at", -1).to_list(length=None)
+    
+    return observations
+
+@api_router.delete("/excel/observations/{observation_id}")
+async def delete_excel_observation(
+    observation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete user's own Excel observation"""
+    observation = await db.excel_record_observations.find_one({"id": observation_id})
+    
+    if not observation:
+        raise HTTPException(status_code=404, detail="Observação não encontrada")
+    
+    # Users can only delete their own observations, admins can delete any
+    if observation["user_id"] != current_user.id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Você só pode excluir suas próprias observações")
+    
+    await db.excel_record_observations.delete_one({"id": observation_id})
+    
+    return {"message": "Observação excluída com sucesso"}
+
 @api_router.get("/kml/search")
 async def search_kml_locations(
     query: str,
