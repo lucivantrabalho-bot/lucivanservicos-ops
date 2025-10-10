@@ -390,7 +390,7 @@ export default function SiteInfo() {
                   </CardHeader>
                   
                   <CardContent>
-                    {renderTable(categoryData.records, categoryData.columns)}
+                    {renderRecordCards(categoryData.records, categoryData.columns, category)}
                   </CardContent>
                 </Card>
               );
