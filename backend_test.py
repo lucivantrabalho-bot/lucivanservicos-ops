@@ -2611,6 +2611,550 @@ class BackendTester:
             self.log_test("KML Replacement System", False, f"Erro durante teste do sistema: {str(e)}")
             return False
 
+    def create_test_excel_file(self, category, data):
+        """Create a test Excel file with given data"""
+        import io
+        import pandas as pd
+        
+        try:
+            df = pd.DataFrame(data)
+            excel_buffer = io.BytesIO()
+            df.to_excel(excel_buffer, index=False, engine='openpyxl')
+            excel_buffer.seek(0)
+            return excel_buffer.getvalue()
+        except Exception as e:
+            self.log_test(f"Create Test Excel - {category}", False, f"Failed to create Excel file: {str(e)}")
+            return None
+
+    def test_excel_upload_clima(self):
+        """Test Excel upload for CLIMA category"""
+        try:
+            # Create test CLIMA data as specified in review request
+            clima_data = [
+                {"Site": "BRH-001", "Temperatura": "25°C", "Umidade": "60%", "Status": "Normal"},
+                {"Site": "CN19-Torre", "Temperatura": "22°C", "Umidade": "55%", "Status": "Alerta"}
+            ]
+            
+            excel_content = self.create_test_excel_file("CLIMA", clima_data)
+            if not excel_content:
+                return False
+            
+            # Upload Excel file
+            files = {'file': ('test_clima.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/CLIMA",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("total_records") == 2 and result.get("category") == "CLIMA":
+                    self.log_test("Excel Upload CLIMA", True, 
+                                f"Successfully uploaded CLIMA Excel with {result['total_records']} records",
+                                f"Columns: {result.get('columns')}")
+                    return True
+                else:
+                    self.log_test("Excel Upload CLIMA", False, 
+                                "Unexpected response structure", result)
+                    return False
+            else:
+                self.log_test("Excel Upload CLIMA", False, 
+                            f"Upload failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Upload CLIMA", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_upload_gerador(self):
+        """Test Excel upload for GERADOR category"""
+        try:
+            # Create test GERADOR data as specified in review request
+            gerador_data = [
+                {"Site": "BRH-001", "Modelo": "CAT 200kW", "Potencia": "200kW", "Combustivel": "Diesel", "Status": "Ativo"},
+                {"Site": "CN19-Torre", "Modelo": "Cummins 150kW", "Potencia": "150kW", "Combustivel": "Diesel", "Status": "Manutenção"}
+            ]
+            
+            excel_content = self.create_test_excel_file("GERADOR", gerador_data)
+            if not excel_content:
+                return False
+            
+            # Upload Excel file
+            files = {'file': ('test_gerador.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/GERADOR",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("total_records") == 2 and result.get("category") == "GERADOR":
+                    self.log_test("Excel Upload GERADOR", True, 
+                                f"Successfully uploaded GERADOR Excel with {result['total_records']} records",
+                                f"Columns: {result.get('columns')}")
+                    return True
+                else:
+                    self.log_test("Excel Upload GERADOR", False, 
+                                "Unexpected response structure", result)
+                    return False
+            else:
+                self.log_test("Excel Upload GERADOR", False, 
+                            f"Upload failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Upload GERADOR", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_upload_all_categories(self):
+        """Test Excel upload for all valid categories"""
+        categories = ["CLIMA", "CONCESSIONARIA", "FCC", "GERADOR", "INVERSOR", "UPS"]
+        
+        for category in categories:
+            try:
+                # Create generic test data for each category
+                test_data = [
+                    {"Site": "BRH-001", "Campo1": f"Valor1_{category}", "Campo2": f"Valor2_{category}", "Status": "Ativo"},
+                    {"Site": "CN19-Torre", "Campo1": f"Valor3_{category}", "Campo2": f"Valor4_{category}", "Status": "Normal"}
+                ]
+                
+                excel_content = self.create_test_excel_file(category, test_data)
+                if not excel_content:
+                    continue
+                
+                # Upload Excel file
+                files = {'file': (f'test_{category.lower()}.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                
+                response = requests.post(
+                    f"{self.base_url}/admin/upload-excel/{category}",
+                    headers=self.get_auth_headers(),
+                    files=files,
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get("total_records") == 2 and result.get("category") == category:
+                        self.log_test(f"Excel Upload {category}", True, 
+                                    f"Successfully uploaded {category} Excel with {result['total_records']} records")
+                    else:
+                        self.log_test(f"Excel Upload {category}", False, 
+                                    "Unexpected response structure", result)
+                else:
+                    self.log_test(f"Excel Upload {category}", False, 
+                                f"Upload failed with status {response.status_code}", response.text)
+                    
+            except Exception as e:
+                self.log_test(f"Excel Upload {category}", False, f"Request failed: {str(e)}")
+
+    def test_excel_invalid_category(self):
+        """Test Excel upload with invalid category"""
+        try:
+            test_data = [{"Site": "TEST", "Campo": "Valor"}]
+            excel_content = self.create_test_excel_file("INVALID", test_data)
+            if not excel_content:
+                return False
+            
+            files = {'file': ('test_invalid.xlsx', excel_content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/INVALID_CATEGORY",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 400:
+                self.log_test("Excel Upload Invalid Category", True, 
+                            "Correctly rejected invalid category")
+                return True
+            else:
+                self.log_test("Excel Upload Invalid Category", False, 
+                            f"Should have rejected invalid category but got: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Upload Invalid Category", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_invalid_file_type(self):
+        """Test Excel upload with non-Excel file"""
+        try:
+            # Create a text file instead of Excel
+            text_content = b"This is not an Excel file"
+            files = {'file': ('test.txt', text_content, 'text/plain')}
+            
+            response = requests.post(
+                f"{self.base_url}/admin/upload-excel/CLIMA",
+                headers=self.get_auth_headers(),
+                files=files,
+                timeout=30
+            )
+            
+            if response.status_code == 400:
+                self.log_test("Excel Upload Invalid File Type", True, 
+                            "Correctly rejected non-Excel file")
+                return True
+            else:
+                self.log_test("Excel Upload Invalid File Type", False, 
+                            f"Should have rejected non-Excel file but got: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Upload Invalid File Type", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_admin_get_data(self):
+        """Test GET /api/admin/excel-data/{category}"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/admin/excel-data/CLIMA",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["category", "has_data"]
+                
+                if all(field in result for field in required_fields):
+                    if result["has_data"]:
+                        # Check for data fields
+                        data_fields = ["filename", "uploaded_by", "uploaded_at", "total_records", "columns", "sample_records"]
+                        if all(field in result for field in data_fields):
+                            self.log_test("Excel Admin Get Data", True, 
+                                        f"Retrieved CLIMA data: {result['total_records']} records",
+                                        f"Filename: {result['filename']}")
+                            return True
+                        else:
+                            self.log_test("Excel Admin Get Data", False, 
+                                        "Missing data fields in response", result)
+                            return False
+                    else:
+                        self.log_test("Excel Admin Get Data", True, 
+                                    "No data available for category (expected if no upload)")
+                        return True
+                else:
+                    self.log_test("Excel Admin Get Data", False, 
+                                "Missing required fields", result)
+                    return False
+            else:
+                self.log_test("Excel Admin Get Data", False, 
+                            f"Request failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Admin Get Data", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_admin_delete_data(self):
+        """Test DELETE /api/admin/excel-data/{category}"""
+        try:
+            response = requests.delete(
+                f"{self.base_url}/admin/excel-data/CLIMA",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result and "deleted_count" in result:
+                    self.log_test("Excel Admin Delete Data", True, 
+                                f"Successfully deleted CLIMA data",
+                                f"Deleted count: {result['deleted_count']}")
+                    return True
+                else:
+                    self.log_test("Excel Admin Delete Data", False, 
+                                "Missing fields in response", result)
+                    return False
+            else:
+                self.log_test("Excel Admin Delete Data", False, 
+                            f"Delete failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Admin Delete Data", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_search_site(self):
+        """Test GET /api/excel/search-site?site={site}"""
+        try:
+            # Search for BRH-001 which should be in our test data
+            response = requests.get(
+                f"{self.base_url}/excel/search-site?site=BRH-001",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["site", "categories_found", "data"]
+                
+                if all(field in result for field in required_fields):
+                    self.log_test("Excel Search Site", True, 
+                                f"Search for BRH-001 found {result['categories_found']} categories",
+                                f"Categories: {list(result['data'].keys()) if result['data'] else 'None'}")
+                    return True
+                else:
+                    self.log_test("Excel Search Site", False, 
+                                "Missing required fields", result)
+                    return False
+            else:
+                self.log_test("Excel Search Site", False, 
+                            f"Search failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Search Site", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_search_invalid_site(self):
+        """Test Excel search with invalid/short site name"""
+        try:
+            # Search with too short query
+            response = requests.get(
+                f"{self.base_url}/excel/search-site?site=X",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                self.log_test("Excel Search Invalid Site", True, 
+                            "Correctly rejected short site query")
+                return True
+            else:
+                self.log_test("Excel Search Invalid Site", False, 
+                            f"Should have rejected short query but got: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Search Invalid Site", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_excel_admin_endpoints(self):
+        """Test all Excel admin endpoints"""
+        self.test_excel_admin_get_data()
+        self.test_excel_admin_delete_data()
+
+    def test_excel_search_functionality(self):
+        """Test Excel search functionality"""
+        self.test_excel_search_site()
+        self.test_excel_search_invalid_site()
+
+    def test_excel_validations(self):
+        """Test Excel upload validations"""
+        self.test_excel_invalid_category()
+        self.test_excel_invalid_file_type()
+
+    def test_excel_data_replacement(self):
+        """Test that new Excel upload replaces old data"""
+        try:
+            # First upload
+            first_data = [{"Site": "FIRST_UPLOAD", "Campo": "Valor1"}]
+            excel_content1 = self.create_test_excel_file("CLIMA", first_data)
+            if not excel_content1:
+                return False
+            
+            files1 = {'file': ('first_upload.xlsx', excel_content1, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            response1 = requests.post(
+                f"{self.base_url}/admin/upload-excel/CLIMA",
+                headers=self.get_auth_headers(),
+                files=files1,
+                timeout=30
+            )
+            
+            if response1.status_code != 200:
+                self.log_test("Excel Data Replacement - First Upload", False, 
+                            f"First upload failed: {response1.status_code}")
+                return False
+            
+            # Second upload (should replace first)
+            second_data = [{"Site": "SECOND_UPLOAD", "Campo": "Valor2"}]
+            excel_content2 = self.create_test_excel_file("CLIMA", second_data)
+            if not excel_content2:
+                return False
+            
+            files2 = {'file': ('second_upload.xlsx', excel_content2, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            
+            response2 = requests.post(
+                f"{self.base_url}/admin/upload-excel/CLIMA",
+                headers=self.get_auth_headers(),
+                files=files2,
+                timeout=30
+            )
+            
+            if response2.status_code == 200:
+                # Verify only second data exists
+                get_response = requests.get(
+                    f"{self.base_url}/admin/excel-data/CLIMA",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if get_response.status_code == 200:
+                    result = get_response.json()
+                    if result.get("has_data") and result.get("total_records") == 1:
+                        # Check if it contains second upload data
+                        sample_records = result.get("sample_records", [])
+                        if sample_records and "SECOND_UPLOAD" in str(sample_records):
+                            self.log_test("Excel Data Replacement", True, 
+                                        "Successfully replaced old data with new upload")
+                            return True
+                        else:
+                            self.log_test("Excel Data Replacement", False, 
+                                        "Data not properly replaced", sample_records)
+                            return False
+                    else:
+                        self.log_test("Excel Data Replacement", False, 
+                                    "Unexpected record count after replacement", result)
+                        return False
+                else:
+                    self.log_test("Excel Data Replacement", False, 
+                                f"Failed to verify replacement: {get_response.status_code}")
+                    return False
+            else:
+                self.log_test("Excel Data Replacement", False, 
+                            f"Second upload failed: {response2.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Excel Data Replacement", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_ami_field_in_pendencia(self):
+        """Test AMI field in pendencia creation and models"""
+        try:
+            # Create pendencia with AMI field
+            pendencia_data = {
+                "site": "TEST_AMI_SITE",
+                "ami": "AMI123456",  # Test AMI field
+                "tipo": "Energia",
+                "subtipo": "Controladora",
+                "observacoes": "Test pendencia with AMI field",
+                "foto_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/pendencias",
+                headers=self.get_auth_headers(),
+                json=pendencia_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                pendencia = response.json()
+                if pendencia.get("ami") == "AMI123456":
+                    self.log_test("AMI Field in Pendencia", True, 
+                                f"Successfully created pendencia with AMI field",
+                                f"AMI: {pendencia['ami']}, ID: {pendencia['id']}")
+                    
+                    # Test editing pendencia with AMI field
+                    edit_data = {
+                        "site": "TEST_AMI_SITE_EDITED",
+                        "ami": "AMI789012",  # Updated AMI
+                        "tipo": "Energia",
+                        "subtipo": "QDCA",
+                        "observacoes": "Edited pendencia with updated AMI"
+                    }
+                    
+                    edit_response = requests.put(
+                        f"{self.base_url}/pendencias/{pendencia['id']}/edit",
+                        headers=self.get_auth_headers(),
+                        json=edit_data,
+                        timeout=10
+                    )
+                    
+                    if edit_response.status_code == 200:
+                        edited_pendencia = edit_response.json()
+                        if edited_pendencia.get("ami") == "AMI789012":
+                            self.log_test("AMI Field Edit Pendencia", True, 
+                                        f"Successfully edited pendencia AMI field",
+                                        f"New AMI: {edited_pendencia['ami']}")
+                        else:
+                            self.log_test("AMI Field Edit Pendencia", False, 
+                                        "AMI field not properly updated in edit")
+                    else:
+                        self.log_test("AMI Field Edit Pendencia", False, 
+                                    f"Edit failed with status {edit_response.status_code}")
+                    
+                    # Cleanup - delete test pendencia
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-pendencia/{pendencia['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    
+                    return True
+                else:
+                    self.log_test("AMI Field in Pendencia", False, 
+                                "AMI field not found in created pendencia", pendencia)
+                    return False
+            else:
+                self.log_test("AMI Field in Pendencia", False, 
+                            f"Pendencia creation failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("AMI Field in Pendencia", False, f"Request failed: {str(e)}")
+            return False
+
+    def test_ami_field_optional(self):
+        """Test that AMI field is optional in pendencia creation"""
+        try:
+            # Create pendencia without AMI field
+            pendencia_data = {
+                "site": "TEST_NO_AMI_SITE",
+                # No AMI field
+                "tipo": "Arcon",
+                "subtipo": "Compressor",
+                "observacoes": "Test pendencia without AMI field",
+                "foto_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/pendencias",
+                headers=self.get_auth_headers(),
+                json=pendencia_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                pendencia = response.json()
+                # AMI should be None or not present
+                ami_value = pendencia.get("ami")
+                if ami_value is None or ami_value == "":
+                    self.log_test("AMI Field Optional", True, 
+                                f"Successfully created pendencia without AMI field",
+                                f"AMI value: {ami_value}")
+                    
+                    # Cleanup - delete test pendencia
+                    requests.delete(
+                        f"{self.base_url}/admin/delete-pendencia/{pendencia['id']}",
+                        headers=self.get_auth_headers(),
+                        timeout=10
+                    )
+                    
+                    return True
+                else:
+                    self.log_test("AMI Field Optional", False, 
+                                f"Unexpected AMI value when not provided: {ami_value}")
+                    return False
+            else:
+                self.log_test("AMI Field Optional", False, 
+                            f"Pendencia creation failed with status {response.status_code}", response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("AMI Field Optional", False, f"Request failed: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all backend tests including new KML functionality"""
         print("=" * 80)
