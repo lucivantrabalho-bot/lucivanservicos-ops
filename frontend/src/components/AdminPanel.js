@@ -304,6 +304,94 @@ export default function AdminPanel() {
     window.open(url, '_blank');
   };
 
+  // Funções para gerenciar Excel
+  const loadExcelData = async () => {
+    const data = {};
+    for (const category of excelCategories) {
+      try {
+        const response = await axios.get(`${API_BASE}/admin/excel-data/${category}`);
+        data[category] = response.data;
+      } catch (err) {
+        console.error(`Error loading ${category} data:`, err);
+        data[category] = { has_data: false, category };
+      }
+    }
+    setExcelData(data);
+  };
+
+  const handleExcelFileChange = (category, event) => {
+    const file = event.target.files[0];
+    if (file && (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls'))) {
+      setExcelFiles(prev => ({ ...prev, [category]: file }));
+    } else {
+      setError('Por favor, selecione um arquivo Excel válido (.xlsx ou .xls)');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleExcelUpload = async (category) => {
+    const file = excelFiles[category];
+    if (!file) {
+      setError(`Selecione um arquivo Excel para a categoria ${category}`);
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    setExcelUploading(prev => ({ ...prev, [category]: true }));
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`${API_BASE}/admin/upload-excel/${category}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setSuccess(`${response.data.message}`);
+      setTimeout(() => setSuccess(''), 5000);
+      
+      // Reset file for this category
+      setExcelFiles(prev => ({ ...prev, [category]: null }));
+      
+      // Reset file input
+      const fileInput = document.getElementById(`excel-file-input-${category}`);
+      if (fileInput) fileInput.value = '';
+      
+      // Reload data for this category
+      const updatedData = await axios.get(`${API_BASE}/admin/excel-data/${category}`);
+      setExcelData(prev => ({ ...prev, [category]: updatedData.data }));
+      
+    } catch (err) {
+      setError(err.response?.data?.detail || `Erro ao processar arquivo Excel da categoria ${category}`);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setExcelUploading(prev => ({ ...prev, [category]: false }));
+    }
+  };
+
+  const deleteExcelData = async (category) => {
+    if (!window.confirm(`Tem certeza que deseja excluir todos os dados da categoria ${category}?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_BASE}/admin/excel-data/${category}`);
+      setSuccess(`Dados da categoria ${category} excluídos com sucesso!`);
+      setTimeout(() => setSuccess(''), 3000);
+      
+      // Reload data
+      setExcelData(prev => ({ 
+        ...prev, 
+        [category]: { has_data: false, category }
+      }));
+      
+    } catch (err) {
+      setError(`Erro ao excluir dados da categoria ${category}`);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   if (!isAdmin) {
     return null;
   }
