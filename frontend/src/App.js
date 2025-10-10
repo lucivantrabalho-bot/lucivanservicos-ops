@@ -11,6 +11,7 @@ import UserProfile from './components/UserProfile';
 import PendingApproval from './components/PendingApproval';
 import DashboardCharts from './components/DashboardCharts';
 import LocationsMap from './components/LocationsMap';
+import SiteInfo from './components/SiteInfo';
 
 // Auth context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
