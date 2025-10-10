@@ -480,10 +480,10 @@
 
 ## test_plan:
   current_focus:
-    - "Excel Upload Endpoints - POST /api/admin/upload-excel/{category}"
-    - "Excel Admin Management - GET/DELETE /api/admin/excel-data/{category}"
-    - "Excel Search Endpoint - GET /api/excel/search-site"
-    - "AMI Field in Pendencia Models"
+    - "Excel Observations System - POST /api/excel/records/{record_id}/observations"
+    - "Excel Observations System - GET /api/excel/records/{record_id}/observations"
+    - "Excel Observations System - DELETE /api/excel/observations/{observation_id}"
+    - "Excel Search with Record IDs - GET /api/excel/search-site"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
