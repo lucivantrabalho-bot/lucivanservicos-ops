@@ -48,6 +48,15 @@ export default function SiteInfo() {
   const [searching, setSearching] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [error, setError] = useState('');
+  
+  // Observation modal states
+  const [observationModal, setObservationModal] = useState({
+    isOpen: false,
+    record: null,
+    recordId: '',
+    observations: []
+  });
+  const [newObservation, setNewObservation] = useState('');
 
   const searchSiteData = async () => {
     if (!searchTerm || searchTerm.length < 2) {
