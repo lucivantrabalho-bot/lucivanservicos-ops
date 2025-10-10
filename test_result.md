@@ -480,10 +480,10 @@
 
 ## test_plan:
   current_focus:
-    - "KML Upload Endpoint - POST /api/admin/upload-kml"
-    - "KML Locations Endpoint - GET /api/kml/locations"
-    - "KML Delete Endpoint - DELETE /api/admin/kml/{kml_id}"
-    - "KML Authentication and Authorization"
+    - "Excel Upload Endpoints - POST /api/admin/upload-excel/{category}"
+    - "Excel Admin Management - GET/DELETE /api/admin/excel-data/{category}"
+    - "Excel Search Endpoint - GET /api/excel/search-site"
+    - "AMI Field in Pendencia Models"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
