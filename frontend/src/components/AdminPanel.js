@@ -89,6 +89,7 @@ export default function AdminPanel() {
       loadMonthlyStats();
       loadFormConfig();
       loadKmlLocations();
+      loadExcelData();
     }
   }, [isAdmin]);
 
