@@ -998,7 +998,7 @@ async def search_site_data(
             matching_records = []
             
             # Search in all columns for the site name
-            for record in excel_data.get("records", []):
+            for record_index, record in enumerate(excel_data.get("records", [])):
                 found_match = False
                 
                 # Check all columns for site match
@@ -1008,7 +1008,10 @@ async def search_site_data(
                         break
                 
                 if found_match:
-                    matching_records.append(record)
+                    # Add unique ID for each record
+                    record_with_id = record.copy()
+                    record_with_id["_record_id"] = f"{excel_data['id']}_{record_index}"
+                    matching_records.append(record_with_id)
             
             if matching_records:
                 results[category] = {
