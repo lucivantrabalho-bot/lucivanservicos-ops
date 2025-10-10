@@ -979,6 +979,135 @@ export default function AdminPanel() {
             </Card>
           </TabsContent>
 
+          {/* Gerenciar Excel */}
+          <TabsContent value="excel-manager" className="space-y-6">
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Database className="w-5 h-5 mr-2 text-blue-500" />
+                  Gerenciador de Arquivos Excel por Categoria
+                </CardTitle>
+                <CardDescription>
+                  Importe e gerencie arquivos Excel separados por categoria para consulta dos usuários
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {excelCategories.map((category) => (
+                    <Card key={category} className="glass border-2">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg flex items-center">
+                            <Table className="w-5 h-5 mr-2 text-emerald-500" />
+                            {category}
+                          </CardTitle>
+                          {excelData[category]?.has_data && (
+                            <Button
+                              onClick={() => deleteExcelData(category)}
+                              variant="outline"
+                              size="sm"
+                              className="p-1 h-8 w-8 text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-4">
+                        {/* Upload Section */}
+                        <div className="space-y-3">
+                          <input
+                            id={`excel-file-input-${category}`}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={(e) => handleExcelFileChange(category, e)}
+                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                          />
+                          
+                          <Button 
+                            onClick={() => handleExcelUpload(category)}
+                            disabled={!excelFiles[category] || excelUploading[category]}
+                            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                            size="sm"
+                          >
+                            {excelUploading[category] ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 mr-2" />
+                                Enviar
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        {/* Data Status */}
+                        {excelData[category]?.has_data ? (
+                          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 space-y-2">
+                            <div className="flex items-center text-emerald-700 dark:text-emerald-300">
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              <span className="font-medium">Dados Carregados</span>
+                            </div>
+                            
+                            <div className="text-xs space-y-1 text-emerald-600 dark:text-emerald-400">
+                              <div>Arquivo: {excelData[category].filename}</div>
+                              <div>Registros: {excelData[category].total_records}</div>
+                              <div>Enviado por: {excelData[category].uploaded_by}</div>
+                              <div>Data: {new Date(excelData[category].uploaded_at).toLocaleDateString('pt-BR')}</div>
+                            </div>
+                            
+                            {excelData[category].columns && (
+                              <div className="text-xs">
+                                <div className="font-medium text-emerald-700 dark:text-emerald-300 mb-1">Colunas:</div>
+                                <div className="text-emerald-600 dark:text-emerald-400">
+                                  {excelData[category].columns.slice(0, 3).join(', ')}
+                                  {excelData[category].columns.length > 3 && '...'}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-center">
+                            <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              Nenhum arquivo carregado
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-500">
+                              Selecione um arquivo Excel (.xlsx ou .xls)
+                            </p>
+                          </div>
+                        )}
+
+                        {excelFiles[category] && (
+                          <div className="text-xs text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                            <strong>Selecionado:</strong> {excelFiles[category].name}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center">
+                    <BarChart className="w-4 h-4 mr-2" />
+                    Como Usar
+                  </h4>
+                  <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• Cada categoria pode ter um arquivo Excel independente</li>
+                    <li>• Ao carregar um novo arquivo, os dados anteriores são substituídos</li>
+                    <li>• Usuários podem buscar informações por site em todas as categorias</li>
+                    <li>• Arquivos devem estar em formato .xlsx ou .xls</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Estatísticas Mensais */}
           <TabsContent value="stats" className="space-y-6">
             {monthlyStats && (
