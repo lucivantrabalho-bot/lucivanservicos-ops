@@ -330,6 +330,66 @@
           agent: "testing"
           comment: "TESTED: KML endpoints have proper authentication and authorization. Admin endpoints (upload, delete) correctly restricted to administrators only. Regular users blocked from admin endpoints (403 Forbidden). Location viewing endpoint accessible to all authenticated users. Unauthenticated access properly blocked (401/403)."
 
+  - task: "Excel Upload Endpoints - POST /api/admin/upload-excel/{category}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Successfully tested Excel upload for all 6 categories (CLIMA, CONCESSIONARIA, FCC, GERADOR, INVERSOR, UPS). Pandas processing working correctly. Test scenarios completed: CLIMA with temperature/humidity data (2 records), GERADOR with model/power/fuel data (2 records). All uploads processed successfully with proper column detection and data parsing. File validation working - correctly rejects non-Excel files and invalid categories."
+
+  - task: "Excel Admin Management - GET/DELETE /api/admin/excel-data/{category}"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Excel admin endpoints working correctly. GET /api/admin/excel-data/{category} returns proper data structure with filename, upload info, record count, columns, and sample records. DELETE /api/admin/excel-data/{category} successfully removes category data. Data replacement functionality confirmed - new uploads replace old data as expected."
+
+  - task: "Excel Search Endpoint - GET /api/excel/search-site"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: Excel search functionality working correctly. Successfully searches across all categories for site names. Test search for 'BRH-001' found data in 5 categories (CONCESSIONARIA, FCC, GERADOR, INVERSOR, UPS). Validation working - correctly rejects queries shorter than 2 characters. Returns proper structure with site, categories_found, and data fields."
+
+  - task: "Excel Validations and Security"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: All Excel validations working correctly. Only .xlsx/.xls files accepted (rejects .txt files). Only valid categories accepted (CLIMA, CONCESSIONARIA, FCC, GERADOR, INVERSOR, UPS). Admin-only upload restrictions enforced. Regular users can search but cannot upload. Data replacement confirmed - old data properly replaced by new uploads."
+
+  - task: "AMI Field in Pendencia Models"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "TESTED: AMI field successfully added to Pendencia, PendenciaCreate, and PendenciaEdit models. Pendencia creation with AMI field working correctly - test pendencia created with AMI 'AMI123456' and properly saved/retrieved. Edit functionality confirmed - AMI field can be updated via PUT /api/pendencias/{id}/edit. AMI field is optional - pendencias can be created without AMI field (defaults to None). Fixed missing AMI field assignment in create_pendencia endpoint."
+
 ## frontend:
   - task: "Nova aba 'Usuários Cadastrados' no AdminPanel"
     implemented: true
