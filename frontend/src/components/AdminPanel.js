@@ -26,7 +26,10 @@ import {
   Upload,
   MapPin,
   ExternalLink,
-  FileText
+  FileText,
+  Database,
+  Table,
+  BarChart
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
