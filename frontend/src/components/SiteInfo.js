@@ -179,9 +179,6 @@ export default function SiteInfo() {
     }
   };
 
-  // State for expanded cards
-  const [expandedCards, setExpandedCards] = useState(new Set());
-
   const toggleCardExpansion = (cardKey) => {
     const newExpanded = new Set(expandedCards);
     if (newExpanded.has(cardKey)) {
