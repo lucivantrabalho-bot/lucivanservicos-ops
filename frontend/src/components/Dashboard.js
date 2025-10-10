@@ -22,7 +22,8 @@ import {
   MapPin,
   Edit3,
   Trash2,
-  BarChart3
+  BarChart3,
+  Database
 } from 'lucide-react';
 import { ThemeToggle } from './ui/theme-toggle';
 import { Alert, AlertDescription } from './ui/alert';
