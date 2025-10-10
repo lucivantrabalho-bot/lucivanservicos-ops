@@ -480,10 +480,7 @@
 
 ## test_plan:
   current_focus:
-    - "Excel Observations System - POST /api/excel/records/{record_id}/observations"
-    - "Excel Observations System - GET /api/excel/records/{record_id}/observations"
-    - "Excel Observations System - DELETE /api/excel/observations/{observation_id}"
-    - "Excel Search with Record IDs - GET /api/excel/search-site"
+    - "CONCESSIONARIA Category Upload Investigation - COMPLETED"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
